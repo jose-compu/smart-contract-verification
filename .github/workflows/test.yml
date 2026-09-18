@@ -1,0 +1,56 @@
+name: CI
+
+permissions: {}
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  check:
+    name: Foundry project
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Show Forge version
+        run: forge --version
+
+      - name: Run Forge fmt
+        run: forge fmt --check
+
+      - name: Run Forge build
+        run: forge build --sizes
+
+      - name: Run Forge tests
+        run: forge test -vvv
+
+      - name: Run Forge coverage
+        run: |
+          set -euo pipefail
+          forge coverage --report summary --report lcov --report-file lcov.info | tee coverage-summary.txt
+          python3 - <<'PY'
+          import re
+          import sys
+
+          text = open("coverage-summary.txt").read()
+          rows = [line for line in text.splitlines() if "Total" in line and "%" in line]
+          if not rows:
+              sys.exit("coverage summary Total row not found")
+          pcts = re.findall(r"(\d+\.\d+)%", rows[-1])
+          if len(pcts) < 4 or any(p != "100.00" for p in pcts[:4]):
+              sys.exit(f"coverage is not 100% on all metrics: {rows[-1]}")
+          print("coverage 100% line/statement/branch/function")
+          PY
