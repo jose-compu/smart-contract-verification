@@ -54,3 +54,21 @@ jobs:
               sys.exit(f"coverage is not 100% on all metrics: {rows[-1]}")
           print("coverage 100% line/statement/branch/function")
           PY
+
+  lean:
+    name: Lean 4
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Build SimpleBank Lean model
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: verification/lean
+          build: "true"
+          test: "false"
+          lint: "false"
