@@ -54,3 +54,40 @@ jobs:
               sys.exit(f"coverage is not 100% on all metrics: {rows[-1]}")
           print("coverage 100% line/statement/branch/function")
           PY
+
+  halmos:
+    name: Halmos symbolic tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      FOUNDRY_PROFILE: halmos
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          # Halmos 0.3.3 fails to model `new SimpleBank()` in setUp() against Foundry's
+          # "stable" (1.8.3 as of writing) build artifacts: it falls back to an unsupported
+          # `vm.deployCode` cheat code and setUp() has no successful path. Pinned to the
+          # version this spec was authored and verified against.
+          version: v1.5.0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install halmos
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install halmos==0.3.3
+          halmos --version
+
+      - name: Run Halmos on SimpleBank
+        run: halmos --contract SimpleBankHalmosTest
