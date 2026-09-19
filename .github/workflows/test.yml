@@ -54,3 +54,34 @@ jobs:
               sys.exit(f"coverage is not 100% on all metrics: {rows[-1]}")
           print("coverage 100% line/statement/branch/function")
           PY
+
+  halmos:
+    name: Halmos symbolic tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      FOUNDRY_PROFILE: halmos
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install halmos
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install halmos
+          halmos --version
+
+      - name: Run Halmos on SimpleBank
+        run: halmos --contract SimpleBankHalmosTest
