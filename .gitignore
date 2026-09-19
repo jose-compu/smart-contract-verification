@@ -17,6 +17,7 @@ bytecode-coverage/
 
 # Dotenv file
 .env
+CERTORA_KEY.txt
 
 # Certora Prover
 .certora_internal/
