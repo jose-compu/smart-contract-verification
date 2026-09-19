@@ -4,7 +4,7 @@ Symbolic execution of [`src/SimpleBank.sol`](../../src/SimpleBank.sol) with **he
 
 Class: symbolic execution. hevm is an EVM (opcodes, `transfer` stipend, Solidity panics). This is not Halmos (Solidity-level Foundry tests) and not a Lean model.
 
-`prove_` tests in `SimpleBank.t.sol` are compiled with Foundry (`ast = true`) and discharged by `hevm test`. Function arguments are symbolic. A `[PASS]` means no assertion violation on the explored paths.
+`prove_` tests in `SimpleBank.t.sol` are compiled with Foundry (`ast = true`) and discharged by `hevm test`. Function arguments are symbolic. A `[PASS]` means no assertion violation on the explored paths. The suite uses `StdAssertions` and deploys `SimpleBank` in each test (no `setUp`) so the Linux hevm binary does not bail on forge-std `Test` construction.
 
 ## Properties
 
