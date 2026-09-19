@@ -54,3 +54,39 @@ jobs:
               sys.exit(f"coverage is not 100% on all metrics: {rows[-1]}")
           print("coverage 100% line/statement/branch/function")
           PY
+
+  hevm:
+    name: hevm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      FOUNDRY_PROFILE: hevm
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install z3 and hevm 0.58.0
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y z3
+          curl -fsSL -o /usr/local/bin/hevm \
+            https://github.com/argotorg/hevm/releases/download/release/0.58.0/hevm-x86_64-linux
+          sudo chmod +x /usr/local/bin/hevm
+          z3 --version
+          hevm version
+
+      - name: Build SimpleBank with AST
+        run: |
+          set -euo pipefail
+          forge clean
+          forge build --ast
+
+      - name: Prove SimpleBank hevm tests
+        run: hevm test --root . --match prove_ --solver z3 --verb 1

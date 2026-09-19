@@ -1,6 +1,8 @@
 # Compiler files
 cache/
 out/
+verification/hevm/cache/
+verification/hevm/out/
 
 # Ignores development broadcast logs
 !/broadcast
