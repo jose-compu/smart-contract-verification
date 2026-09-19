@@ -88,12 +88,15 @@ forge script script/Deploy.s.sol:DeploySimpleBank --broadcast --rpc-url http://1
 | `src/SimpleBank.sol` | Example contract |
 | `test/` | Unit, fuzz, invariant, handler, and script tests |
 | `script/Deploy.s.sol` | Deployment |
-| `verification/` | Reserved for formal / symbolic / model-checking experiments |
-| `.github/workflows/test.yml` | `fmt`, build, tests, 100% coverage gate |
+| `verification/` | Formal / symbolic / model-checking experiments |
+| `verification/hevm/` | hevm symbolic proofs for `SimpleBank` |
+| `.github/workflows/test.yml` | `fmt`, build, tests, 100% coverage gate, hevm proofs |
 
 ## Verification
 
-`verification/` is empty until a method is added. Each method occupies its own subfolder (tooling, specs, proofs or rules, and notes). Foundry tests are executable checking; work there is meant to go further: machine-checked proofs, symbolic execution, or model checking of the same contract.
+`verification/` holds one experiment per tool. Foundry tests are executable checking; work here is meant to go further: machine-checked proofs, symbolic execution, or model checking of the same contract.
+
+The hevm experiment is [`verification/hevm/`](verification/hevm/): symbolic EVM proofs of `SimpleBank` ([hevm.dev](https://hevm.dev/)).
 
 ### Classification
 
