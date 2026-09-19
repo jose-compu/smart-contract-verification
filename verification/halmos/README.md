@@ -62,13 +62,14 @@ Halmos at `test/`: it is the only way to get a clean (0 warnings, 0 false positi
 
 ## Run
 
-Requires Python 3.9+. `certora-cli`/`solc` are not needed; Halmos ships its own SMT solvers
-(`yices-solver` and `z3-solver` are pulled in as pip dependencies) and needs no API key or account.
+Requires Python 3.9+ and Foundry **v1.5.0** specifically (see "Foundry version" below).
+`certora-cli`/`solc` are not needed; Halmos ships its own SMT solvers (`yices-solver` and
+`z3-solver` are pulled in as pip dependencies) and needs no API key or account.
 
 ```shell
 python3 -m venv .venv
 source .venv/bin/activate
-pip install halmos
+pip install halmos==0.3.3
 
 # Halmos's own check_* tests (dedicated Foundry profile, see foundry.toml)
 FOUNDRY_PROFILE=halmos halmos --contract SimpleBankHalmosTest
@@ -80,6 +81,16 @@ halmos --contract SimpleBankTest --function testFuzz_IndependentAccounting
 Run from the repository root. `FOUNDRY_PROFILE=halmos` points Foundry's `test` root at
 `verification/halmos/` instead of `test/`, purely so `forge build` (which Halmos calls itself)
 compiles this file — it does not affect `src/`.
+
+### Foundry version
+
+Halmos 0.3.3 does not model `new SimpleBank()` in `setUp()` correctly against Foundry's `stable`
+channel (1.8.3 as of writing): it falls back to an unsupported `vm.deployCode` cheat code and
+`setUp()` has no successful path, failing all six checks before any of them run. Pin Foundry to
+**v1.5.0** (`foundryup --install v1.5.0` locally; `version: v1.5.0` on
+`foundry-rs/foundry-toolchain@v1` in CI), the version this spec was authored and verified against.
+The rest of the repository's tooling (`forge test`, coverage, `forge fmt`) has no such constraint
+and keeps using Foundry's `stable` channel.
 
 ## Trust
 

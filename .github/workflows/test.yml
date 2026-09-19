@@ -70,6 +70,12 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          # Halmos 0.3.3 fails to model `new SimpleBank()` in setUp() against Foundry's
+          # "stable" (1.8.3 as of writing) build artifacts: it falls back to an unsupported
+          # `vm.deployCode` cheat code and setUp() has no successful path. Pinned to the
+          # version this spec was authored and verified against.
+          version: v1.5.0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -80,7 +86,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip
-          python -m pip install halmos
+          python -m pip install halmos==0.3.3
           halmos --version
 
       - name: Run Halmos on SimpleBank
