@@ -18,5 +18,13 @@ bytecode-coverage/
 # Dotenv file
 .env
 
+# Certora Prover
+.certora_internal/
+.certora_config/
+.certora_recent_files.txt
+.certora_build.json
+emv-*/
+.zip-output-*/
+
 # OS
 .DS_Store

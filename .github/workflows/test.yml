@@ -54,3 +54,37 @@ jobs:
               sys.exit(f"coverage is not 100% on all metrics: {rows[-1]}")
           print("coverage 100% line/statement/branch/function")
           PY
+
+  certora:
+    name: Certora CVL
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      CERTORAKEY: ${{ secrets.CERTORAKEY }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install certora-cli and solc 0.8.24
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install certora-cli solc-select
+          solc-select install 0.8.24
+          solc-select use 0.8.24
+          certoraRun --version
+          solc --version
+
+      - name: Typecheck SimpleBank CVL spec
+        run: certoraRun verification/certora/SimpleBank.conf --compilation_steps_only
+
+      - name: Prove SimpleBank CVL rules
+        if: env.CERTORAKEY != ''
+        run: certoraRun verification/certora/SimpleBank.conf
