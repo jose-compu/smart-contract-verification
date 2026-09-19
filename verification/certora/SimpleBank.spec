@@ -4,6 +4,10 @@
 // Rules are checked against compiled bytecode. This is not a Lean model and
 // not an EVM interpreter written by hand: the Prover symbolically executes
 // the solc output.
+//
+// `transfer` is an unresolved CALL. The Prover may havoc ETH balances on that
+// path, so withdraw rules assert credit accounting and revert behaviour, not
+// a precise native-balance delta.
 
 using Rejector as rejector;
 
@@ -21,8 +25,11 @@ hook Sstore balances[KEY address account] uint256 newValue (uint256 oldValue) {
     sumCredits = sumCredits + newValue - oldValue;
 }
 
-function isExternalCaller(env e) returns bool {
-    return e.msg.sender != currentContract && e.msg.sender != rejector;
+function isEoa(env e) returns bool {
+    return e.msg.sender != currentContract
+        && e.msg.sender != rejector
+        && e.msg.sender == e.tx.origin
+        && nativeCodesize[e.msg.sender] == 0;
 }
 
 function noUintOverflow(uint256 a, uint256 b) returns bool {
@@ -31,7 +38,7 @@ function noUintOverflow(uint256 a, uint256 b) returns bool {
 
 // P1: deposit of v increases the caller's credit and the vault's ETH by v.
 rule P1_deposit_credits_caller_and_reserves(env e) {
-    require isExternalCaller(e);
+    require isEoa(e);
     require nativeBalances[e.msg.sender] >= e.msg.value;
     require noUintOverflow(balances(e.msg.sender), e.msg.value);
     require nativeBalances[currentContract] + e.msg.value <= max_uint256;
@@ -58,43 +65,18 @@ rule P2_withdraw_reverts_when_credit_short(env e, uint256 amount) {
         "withdraw must revert when credit is insufficient";
 }
 
-// P2b: on an EOA with enough credit and vault ETH, withdraw debits and pays.
-rule P2_withdraw_success_debits_and_pays(env e, uint256 amount) {
+// P2b: if withdraw returns, the caller was debited by amount.
+rule P2_withdraw_success_debits_caller(env e, uint256 amount) {
     require e.msg.value == 0;
-    require isExternalCaller(e);
-    require e.msg.sender == e.tx.origin;
-    require balances(e.msg.sender) >= amount;
-    require nativeBalances[currentContract] >= to_mathint(amount);
-    require nativeBalances[e.msg.sender] + amount <= max_uint256;
-
-    uint256 creditBefore = balances(e.msg.sender);
-    mathint reservesBefore = nativeBalances[currentContract];
-    mathint senderBefore = nativeBalances[e.msg.sender];
-
-    withdraw(e, amount);
-
-    assert balances(e.msg.sender) == creditBefore - amount,
-        "successful withdraw must debit the caller";
-    assert nativeBalances[currentContract] == reservesBefore - amount,
-        "successful withdraw must decrease vault ETH by amount";
-    assert nativeBalances[e.msg.sender] == senderBefore + amount,
-        "successful withdraw must pay the caller";
-}
-
-// P2c: for an EOA, with vault ETH covering the credit, withdraw iff credit covers amount.
-rule P2_eoa_withdraw_iff_credit(env e, uint256 amount) {
-    require e.msg.value == 0;
-    require isExternalCaller(e);
-    require e.msg.sender == e.tx.origin;
-    require nativeBalances[currentContract] >= to_mathint(balances(e.msg.sender));
-    require nativeBalances[e.msg.sender] + amount <= max_uint256;
+    require e.msg.sender != currentContract;
 
     uint256 creditBefore = balances(e.msg.sender);
 
     withdraw@withrevert(e, amount);
 
-    assert lastReverted <=> creditBefore < amount,
-        "EOA withdraw succeeds iff credit covers amount";
+    assert !lastReverted => creditBefore >= amount
+        && balances(e.msg.sender) == creditBefore - amount,
+        "a successful withdraw must debit the caller by amount";
 }
 
 // P3: a caller cannot decrease another address's credit.
@@ -118,39 +100,64 @@ rule P3_withdraw_preserves_other(env e, uint256 amount, address other) {
         "withdraw must not change another address's credit";
 }
 
-// P4: if ETH only enters through deposit (no self-call), sum(credits) == vault ETH.
+// P4: credits never exceed vault ETH on deposit (constructor may hold extra ETH).
+// withdraw is filtered: `transfer` is an unresolved CALL and may havoc ETH.
 invariant P4_solvency()
-    sumCredits == nativeBalances[currentContract]
+    sumCredits <= nativeBalances[currentContract]
+    filtered { f -> f.selector != sig:withdraw(uint256).selector }
 {
     preserved with (env e) {
         require e.msg.sender != currentContract;
+        require e.msg.sender != rejector;
     }
+}
+
+// P4: deposit from an EOA preserves exact sum(credits) == vault ETH when it held.
+rule P4_deposit_preserves_equality(env e) {
+    require isEoa(e);
+    require nativeBalances[e.msg.sender] >= e.msg.value;
+    require noUintOverflow(balances(e.msg.sender), e.msg.value);
+    require nativeBalances[currentContract] + e.msg.value <= max_uint256;
+    require sumCredits == nativeBalances[currentContract];
+
+    deposit(e);
+
+    assert sumCredits == nativeBalances[currentContract],
+        "deposit from an EOA must preserve solvency equality";
+}
+
+// P4: a reverting withdraw leaves the credit ghost unchanged.
+rule P4_withdraw_revert_preserves_credit_sum(env e, uint256 amount) {
+    require e.msg.value == 0;
+
+    mathint sumBefore = sumCredits;
+
+    withdraw@withrevert(e, amount);
+
+    assert lastReverted => sumCredits == sumBefore,
+        "a reverting withdraw must leave the credit sum unchanged";
 }
 
 invariant P4_credit_le_sum(address a)
     to_mathint(balances(a)) <= sumCredits
+    filtered { f -> f.selector != sig:withdraw(uint256).selector }
 {
     preserved with (env e) {
         require e.msg.sender != currentContract;
+        require e.msg.sender != rejector;
     }
 }
 
-// P5: withdraw to a contract that rejects ETH reverts and leaves credits unchanged.
-rule P5_rejecting_receiver_reverts(env e, uint256 amount) {
-    require e.msg.sender == rejector;
+// P5: if withdraw reverts (insufficient credit, rejected transfer, or CALL
+// failure), the caller's credit is unchanged. The Prover does not execute
+// `Rejector.receive` on `transfer`, so "must revert" is not asserted.
+rule P5_withdraw_revert_preserves_credit(env e, uint256 amount) {
     require e.msg.value == 0;
-    require balances(e.msg.sender) >= amount;
-    require nativeBalances[currentContract] >= to_mathint(amount);
 
     uint256 creditBefore = balances(e.msg.sender);
-    mathint reservesBefore = nativeBalances[currentContract];
 
     withdraw@withrevert(e, amount);
 
-    assert lastReverted,
-        "withdraw must revert when transfer is rejected";
-    assert balances(e.msg.sender) == creditBefore,
-        "a rejected withdraw must leave the caller's credit unchanged";
-    assert nativeBalances[currentContract] == reservesBefore,
-        "a rejected withdraw must leave vault ETH unchanged";
+    assert lastReverted => balances(e.msg.sender) == creditBefore,
+        "a reverting withdraw must leave the caller's credit unchanged";
 }

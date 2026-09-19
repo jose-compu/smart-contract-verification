@@ -21,12 +21,12 @@ Class: automated deductive / SMT. Language: [Certora CVL](https://docs.certora.c
 | Id | Claim | Rule / invariant |
 | --- | --- | --- |
 | P1 | Deposit of `v` increases the caller’s credit and vault ETH by `v` | `P1_deposit_credits_caller_and_reserves` |
-| P2 | Withdraw reverts when credit is short; an EOA with enough credit is paid | `P2_withdraw_reverts_when_credit_short`, `P2_withdraw_success_debits_and_pays`, `P2_eoa_withdraw_iff_credit` |
+| P2 | Withdraw reverts when credit is short; success debits the caller | `P2_withdraw_reverts_when_credit_short`, `P2_withdraw_success_debits_caller` |
 | P3 | A caller cannot decrease another address’s credit | `P3_deposit_preserves_other`, `P3_withdraw_preserves_other` |
-| P4 | If ETH only enters through `deposit`, `sum(credits) == address(this).balance` | `P4_solvency`, `P4_credit_le_sum` |
-| P5 | Rejecting receiver: withdraw reverts and state is unchanged | `P5_rejecting_receiver_reverts` |
+| P4 | Credits never exceed vault ETH on deposit; a reverting withdraw leaves the ghost unchanged | `P4_solvency`, `P4_deposit_preserves_equality`, `P4_withdraw_revert_preserves_credit_sum`, `P4_credit_le_sum` |
+| P5 | A reverting withdraw leaves the caller’s credit unchanged | `P5_withdraw_revert_preserves_credit` |
 
-P5 uses [`harness/Rejector.sol`](harness/Rejector.sol). A receiver that exceeds the `transfer` stipend is the same observable (the CALL fails). Self-calls (`msg.sender == currentContract`) are excluded from P1/P2/P4: they are not a reachable entry from an EOA, and a self-`deposit` would credit without moving ETH.
+[`harness/Rejector.sol`](harness/Rejector.sol) is in the scene for a rejecting `receive`. The Prover does not execute that `receive` on `transfer`, so P5 is the revert-atomicity claim, not “Rejector implies revert”. Self-calls are excluded from P1/P4: a self-`deposit` would credit without moving ETH.
 
 ## Run
 
@@ -52,6 +52,6 @@ Run from the repository root.
 ## Trust
 
 - The Prover reads bytecode, not a separate vault model.
-- P4 holds for the public ABI when the caller is not the vault itself. Extra ETH (for example `selfdestruct` in older EVM rules) is outside that claim.
-- P2’s iff form is for EOAs (`msg.sender == tx.origin`). A rejecting contract is P5.
+- P4 equality is proved for `deposit` from an EOA. `withdraw` uses `transfer` (an unresolved CALL); the Prover may havoc ETH on that path, so withdraw rules check credit accounting, not a native-balance delta.
+- Extra ETH at construction (or `selfdestruct` in older EVM rules) is outside exact equality.
 - A green `compilation_steps_only` run is not a proof; a green Prover job is.
