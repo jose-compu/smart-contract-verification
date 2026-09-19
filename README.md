@@ -93,7 +93,9 @@ forge script script/Deploy.s.sol:DeploySimpleBank --broadcast --rpc-url http://1
 
 ## Verification
 
-`verification/` is empty until a method is added. Each method occupies its own subfolder (tooling, specs, proofs or rules, and notes). Foundry tests are executable checking; work there is meant to go further: machine-checked proofs, symbolic execution, or model checking of the same contract.
+`verification/` holds one experiment per tool. Foundry tests are executable checking; work here is meant to go further: machine-checked proofs, symbolic execution, or model checking of the same contract.
+
+The first experiment is [`verification/alloy/`](verification/alloy/): an Alloy 6 model of `SimpleBank` ([alloytools.org](https://alloytools.org/)).
 
 ### Classification
 
