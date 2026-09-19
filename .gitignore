@@ -18,5 +18,8 @@ bytecode-coverage/
 # Dotenv file
 .env
 
+# Lean / Lake
+verification/lean/.lake/
+
 # OS
 .DS_Store
