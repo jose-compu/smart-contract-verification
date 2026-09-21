@@ -37,6 +37,9 @@ jobs:
       - name: Run Forge tests
         run: forge test -vvv
 
+      - name: Check the EVM Lean bytecode literal is current
+        run: ./verification/evm-lean/check-bytecode.sh
+
       - name: Run Forge coverage
         run: |
           set -euo pipefail

@@ -97,6 +97,8 @@ forge script script/Deploy.s.sol:DeploySimpleBank --broadcast --rpc-url http://1
 
 The Lean 4 experiment is [`verification/lean/`](verification/lean/): kernel-checked proofs of `SimpleBank` ([lean-lang.org](https://lean-lang.org/)).
 
+[`verification/evm-lean/`](verification/evm-lean/) takes the other route with the same prover: it runs the *deployed bytecode* on EVMYulLean's formal EVM. The two are complements. The Lean model proves unbounded statements about a hand-written abstraction; the EVM Lean checks execute the real artifact, including gas and the 2300 wei stipend of `transfer`, on fifteen concrete traces.
+
 ### Classification
 
 Tools are grouped by *how they argue*, not by vendor. The guarantee column is the usual ceiling, not a promise on `SimpleBank`.
@@ -120,7 +122,7 @@ Tools are grouped by *how they argue*, not by vendor. The guarantee column is th
 Kernel-checked mathematics. High assurance, high effort. The Solidity text is usually *modelled*, not executed.
 
 - **Lean 4** — Interactive theorem prover and programming language. You write a `SimpleBank` state and theorems (solvency, no cross-account debit); the kernel accepts a proof or rejects it. Nothing here talks to `solc` unless you add that link yourself.
-- **EVM Lean (EVMYulLean)** — Executable Lean 4 semantics of the EVM and Yul ([NethermindEth/EVMYulLean](https://github.com/NethermindEth/EVMYulLean)), checked against Cancun tests. Use it as the *machine* on which bytecode or Yul is proved, rather than as a Solidity rewrite.
+- **EVM Lean (EVMYulLean)** — Executable Lean 4 semantics of the EVM and Yul ([NethermindEth/EVMYulLean](https://github.com/NethermindEth/EVMYulLean)), checked against Cancun tests. Use it as the *machine* on which bytecode or Yul is proved, rather than as a Solidity rewrite. Done in [`verification/evm-lean/`](verification/evm-lean/), where `SimpleBank`'s runtime bytecode runs on the formal EVM.
 - **Verity** — Lean 4 EDSL and verified compiler ([veritylang.com](https://veritylang.com/)). Spec, implementation, and proof are one artifact; compilation toward Yul/EVM is proved for a supported fragment. A `SimpleBank` port is a new Verity contract, not the current `.sol` file. See [verified compilation](#verified-compilation-and-certified-extraction) for the systems it is measured against.
 - **Coq** — Independent ITP. Same role as Lean: embed a vault model (or an EVM fragment) and prove theorems. Several academic EVM embeddings exist; none are wired to this repo yet.
 - **Isabelle/HOL** — Another ITP, historically used for bytecode and protocol proofs. A `SimpleBank` theory would be a HOL model plus lemmas, with a trusted step back to EVM if desired.
@@ -148,7 +150,7 @@ Adapted from Table 1 of the [Verity paper](https://veritylabs.dev/papers/verity.
 | ConCert | Coq / Rocq | Gallina | Liquidity, CameLIGO, Rust | Certified extraction | Only as a rewrite, and not for the EVM |
 | Verity | Lean 4 | Lean EDSL | Yul | Verified compiler | Only as a rewrite in the EDSL |
 | KEVM | K | n/a | EVM bytecode | Post-hoc verification | Yes, on the compiled bytecode |
-| EVMYulLean | Lean 4 | n/a | EVM bytecode and Yul | Post-hoc execution | Yes, on the compiled bytecode |
+| EVMYulLean | Lean 4 | n/a | EVM bytecode and Yul | Post-hoc execution | Yes, done in [`verification/evm-lean/`](verification/evm-lean/) |
 
 The split in that last column is the whole trade-off. Everything in the verified-compilation family buys a stronger guarantee by changing what the artifact *is*; only the post-hoc rows keep `src/SimpleBank.sol` as the subject.
 
@@ -209,7 +211,7 @@ Created only when an experiment exists.
 | Subfolder | Class | Tool |
 | --- | --- | --- |
 | `verification/lean/` | Interactive theorem proving | Lean 4 |
-| `verification/evm-lean/` | Interactive theorem proving | EVMYulLean |
+| `verification/evm-lean/` | Semantic frameworks | EVMYulLean |
 | `verification/verity/` | Verified compilation | Verity |
 | `verification/deepsea/` | Verified compilation | DeepSEA |
 | `verification/certora/` | Automated deductive / SMT | Certora CVL |
@@ -220,6 +222,8 @@ Created only when an experiment exists.
 | `verification/kontrol/` | Symbolic execution / KEVM | Kontrol |
 | `verification/hevm/` | Symbolic execution | hevm |
 | `verification/act/` | Spec overlay | Act |
+
+EVMYulLean is a Lean 4 development, so it sits under interactive theorem proving as a *tool*. It is listed as a semantic framework here because of how [`verification/evm-lean/`](verification/evm-lean/) uses it: the keccak FFI blocks kernel reduction, so the checks are executions of a formal EVM rather than proofs.
 
 ### Properties to compare across tools
 

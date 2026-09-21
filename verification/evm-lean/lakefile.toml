@@ -1,0 +1,15 @@
+name = "simpleBankEvm"
+version = "0.1.0"
+defaultTargets = ["SimpleBankEVM", "simplebank-evm"]
+
+[[require]]
+name = "evmyul"
+git = "https://github.com/NethermindEth/EVMYulLean.git"
+rev = "047f63070309f436b66c61e276ab3b6d1169265a"
+
+[[lean_lib]]
+name = "SimpleBankEVM"
+
+[[lean_exe]]
+name = "simplebank-evm"
+root = "Main"
