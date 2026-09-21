@@ -1,0 +1,60 @@
+name: EVM Lean
+
+permissions: {}
+
+# Kept out of the main CI workflow: building an executable against the EVM
+# semantics compiles native objects for the whole Mathlib import closure, which
+# the olean cache does not carry. Expect tens of minutes on a cold run.
+on:
+  push:
+    paths:
+      - "verification/evm-lean/**"
+      - "src/SimpleBank.sol"
+      - ".github/workflows/evm-lean.yml"
+  pull_request:
+    paths:
+      - "verification/evm-lean/**"
+      - "src/SimpleBank.sol"
+      - ".github/workflows/evm-lean.yml"
+  workflow_dispatch:
+
+jobs:
+  evm-lean:
+    name: SimpleBank on the EVMYulLean semantics
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: verification/evm-lean
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Install elan
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Show Lean version
+        run: |
+          lake --version
+          lean --version
+
+      - name: Fetch dependencies and the Mathlib olean cache
+        run: lake exe cache get
+
+      - name: Neutralise the EthereumTests submodule step
+        # EVMYulLean's FFI target runs `git submodule update --init` in the build
+        # directory unless ./EthereumTests exists, which clones several GB of
+        # conformance fixtures that only its own Conform target needs.
+        run: mkdir -p EthereumTests
+
+      - name: Build the EVM semantics and the SimpleBank harness
+        run: lake build
+
+      - name: Run SimpleBank on the EVM semantics
+        run: lake exe simplebank-evm
