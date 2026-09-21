@@ -104,6 +104,7 @@ Tools are grouped by *how they argue*, not by vendor. The guarantee column is th
 | Class | Question | Typical artifact | Usual guarantee |
 | --- | --- | --- | --- |
 | Interactive theorem proving | Does a proof of this theorem exist? | Lean / Coq / Isabelle model, or a verified compiler | Unbounded, kernel-checked (human-written proofs) |
+| Verified compilation / certified extraction | Is every program this compiler emits correct by construction? | A DSL or EDSL source plus a machine-checked compiler proof | Unbounded for programs inside the supported fragment; the contract is not Solidity |
 | Automated deductive / SMT | Do these rules or assertions hold on all paths the solver can see? | Solidity, bytecode, or a spec language | Unbounded in intent; solvers may time out or need bounds |
 | Relational model finding | Is there a counterexample in this finite scope? | Alloy / DynAlloy model | Bounded SAT; a pass is not an unbounded proof |
 | Symbolic execution | Can any input violate this assertion? | Foundry tests or EVM bytecode | All paths in the explored fragment; loops often bounded |
@@ -120,9 +121,36 @@ Kernel-checked mathematics. High assurance, high effort. The Solidity text is us
 
 - **Lean 4** — Interactive theorem prover and programming language. You write a `SimpleBank` state and theorems (solvency, no cross-account debit); the kernel accepts a proof or rejects it. Nothing here talks to `solc` unless you add that link yourself.
 - **EVM Lean (EVMYulLean)** — Executable Lean 4 semantics of the EVM and Yul ([NethermindEth/EVMYulLean](https://github.com/NethermindEth/EVMYulLean)), checked against Cancun tests. Use it as the *machine* on which bytecode or Yul is proved, rather than as a Solidity rewrite.
-- **Verity** — Lean 4 EDSL and verified compiler ([veritylang.com](https://veritylang.com/)). Spec, implementation, and proof are one artifact; compilation toward Yul/EVM is proved for a supported fragment. A `SimpleBank` port is a new Verity contract, not the current `.sol` file.
+- **Verity** — Lean 4 EDSL and verified compiler ([veritylang.com](https://veritylang.com/)). Spec, implementation, and proof are one artifact; compilation toward Yul/EVM is proved for a supported fragment. A `SimpleBank` port is a new Verity contract, not the current `.sol` file. See [verified compilation](#verified-compilation-and-certified-extraction) for the systems it is measured against.
 - **Coq** — Independent ITP. Same role as Lean: embed a vault model (or an EVM fragment) and prove theorems. Several academic EVM embeddings exist; none are wired to this repo yet.
 - **Isabelle/HOL** — Another ITP, historically used for bytecode and protocol proofs. A `SimpleBank` theory would be a HOL model plus lemmas, with a trusted step back to EVM if desired.
+- **HOL4** — The prover behind CakeML. No EVM story of its own; listed because the verified-compiler results below are stated in it, so reading them means reading HOL4.
+
+#### Verified compilation and certified extraction
+
+A different bargain from the above. Instead of proving things about one contract, you prove the *compiler* once and every program it accepts inherits the result. The catch is the same everywhere: the thing that gets proved is a program in the tool's own language, so `src/SimpleBank.sol` would be rewritten rather than verified, and the tail of the pipeline stays trusted. Verity, listed above, belongs to this family.
+
+- **DeepSEA** — Coq language and verified compiler emitting both EVM bytecode and a Coq model of the same program, so a theorem inside Coq says that a given bytecode implements a given specification ([shentufoundation/deepsea](https://github.com/shentufoundation/deepsea), [arXiv:2405.08348](https://arxiv.org/abs/2405.08348)). The closest published analogue to Verity for the EVM. Two practical caveats: the maintainers describe the project as no longer active and point to [Clear](https://github.com/NethermindEth/Clear) instead, and because it reuses CompCert sources it carries the CompCert licence, which permits research and evaluation but not commercial use.
+- **ConCert** — Coq, now Rocq, framework where a contract is a Gallina function checked directly in the prover, with *certified extraction* to Liquidity, CameLIGO, and Rust ([AU-COBRA/ConCert](https://github.com/AU-COBRA/ConCert)). It also ships an executable blockchain semantics with QuickChick testing of multi-contract interactions, which is the part with no counterpart elsewhere in this survey. There is no EVM backend, so a `SimpleBank` port would be a Tezos or Concordium contract.
+- **CairoZero proof-producing compiler** — Avigad et al. extended the CairoZero compiler to emit, per compiled program, a Lean proof that the machine code meets a specification ([starkware-libs/formal-proofs](https://github.com/starkware-libs/formal-proofs), [ITP 2023](https://doi.org/10.4230/LIPIcs.ITP.2023.7)). *Proof-producing* rather than verified-compiler: nothing is proved about the compiler, each output carries its own certificate, so the technique can in principle cover any compiled program at the cost of per-program effort. The target is the Cairo CPU, not the EVM.
+- **Lineage, not tools for this repo** — **CompCert** ([compcert.org](https://compcert.org/), Coq, a C subset to assembly) established the paradigm, **CakeML** ([cakeml.org](https://cakeml.org/), HOL4, ML to machine code) carried it into a functional language, and Appel's **Verified Software Toolchain** extended it to linking and composition. None of them touch Solidity. They are here because every row above is an argument with one of them, and because they are the reason "verified compiler" means a specific thing rather than a slogan.
+
+##### How these compare
+
+Adapted from Table 1 of the [Verity paper](https://veritylabs.dev/papers/verity.pdf). The last column is added for this survey, as is the EVMYulLean row, which the paper discusses in prose rather than in the table.
+
+| System | Prover | Source | Target | Style | Could it verify `SimpleBank.sol`? |
+| --- | --- | --- | --- | --- | --- |
+| CompCert | Coq | C subset | Assembly | Verified compiler | No, wrong language entirely |
+| CakeML | HOL4 | ML | Machine code | Verified compiler | No, wrong language entirely |
+| Avigad et al. | Lean 3, ported to 4 | CairoZero | Cairo machine code | Proof-producing | No, wrong chain |
+| DeepSEA | Coq | DeepSEA | EVM bytecode | Verified compiler | Only as a rewrite in DeepSEA |
+| ConCert | Coq / Rocq | Gallina | Liquidity, CameLIGO, Rust | Certified extraction | Only as a rewrite, and not for the EVM |
+| Verity | Lean 4 | Lean EDSL | Yul | Verified compiler | Only as a rewrite in the EDSL |
+| KEVM | K | n/a | EVM bytecode | Post-hoc verification | Yes, on the compiled bytecode |
+| EVMYulLean | Lean 4 | n/a | EVM bytecode and Yul | Post-hoc execution | Yes, on the compiled bytecode |
+
+The split in that last column is the whole trade-off. Everything in the verified-compilation family buys a stronger guarantee by changing what the artifact *is*; only the post-hoc rows keep `src/SimpleBank.sol` as the subject.
 
 #### Automated deductive verification (SMT)
 
@@ -182,7 +210,8 @@ Created only when an experiment exists.
 | --- | --- | --- |
 | `verification/lean/` | Interactive theorem proving | Lean 4 |
 | `verification/evm-lean/` | Interactive theorem proving | EVMYulLean |
-| `verification/verity/` | Interactive theorem proving | Verity |
+| `verification/verity/` | Verified compilation | Verity |
+| `verification/deepsea/` | Verified compilation | DeepSEA |
 | `verification/certora/` | Automated deductive / SMT | Certora CVL |
 | `verification/smtchecker/` | Automated deductive / SMT | Solidity SMTChecker |
 | `verification/alloy/` | Relational model finding | Alloy |
