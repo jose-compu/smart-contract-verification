@@ -130,19 +130,6 @@ theorem creditSum_not_mem
     simp [creditSum, hne]
     exact ih htl
 
-theorem pairwise_head_not_mem {a : Address} {as : List Address}
-    (h : (a :: as).Pairwise (· ≠ ·)) : a ∉ as := by
-  intro m
-  cases h with
-  | cons hall _ =>
-    exact (hall a m) rfl
-
-theorem pairwise_tail {a : Address} {as : List Address}
-    (h : (a :: as).Pairwise (· ≠ ·)) : as.Pairwise (· ≠ ·) := by
-  cases h with
-  | cons _ htail =>
-    exact htail
-
 theorem credit_le_sum (credit : Address → Wei) (sender : Address) (xs : List Address)
     (hmem : sender ∈ xs) : credit sender ≤ creditSum credit xs := by
   induction xs with
@@ -161,7 +148,7 @@ theorem add_sub_sub_add {x y a : Nat} (ha_y : a ≤ y) (ha_x : a ≤ x) :
 
 theorem creditSum_mem
     (credit : Address → Wei) (sender : Address) (newVal : Wei) (xs : List Address)
-    (hmem : sender ∈ xs) (hnd : xs.Pairwise (· ≠ ·)) :
+    (hmem : sender ∈ xs) (hnd : xs.Nodup) :
     creditSum (fun a => if a = sender then newVal else credit a) xs + credit sender =
       creditSum credit xs + newVal := by
   revert hmem hnd
@@ -174,14 +161,14 @@ theorem creditSum_mem
     simp [List.mem_cons] at hmem
     rcases hmem with h | hmem'
     · subst h
-      have hnin : sender ∉ as := pairwise_head_not_mem hnd
+      have hnin : sender ∉ as := (List.nodup_cons.mp hnd).1
       simp [creditSum, creditSum_not_mem credit sender newVal as hnin]
       ac_rfl
     · have hne : a ≠ sender := by
         intro e
         subst e
-        exact pairwise_head_not_mem hnd hmem'
-      have hih := ih hmem' (pairwise_tail hnd)
+        exact (List.nodup_cons.mp hnd).1 hmem'
+      have hih := ih hmem' (List.nodup_cons.mp hnd).2
       change
         (if a = sender then newVal else credit a) + creditSum (fun b => if b = sender then newVal else credit b) as +
             credit sender =
@@ -192,7 +179,7 @@ theorem creditSum_mem
 /-- P4: deposit preserves solvency on a duplicate-free support that contains the sender. -/
 theorem P4_deposit_preserves_solvency
     (s : State) (sender : Address) (value : Wei) (xs : List Address)
-    (hmem : sender ∈ xs) (hnd : xs.Pairwise (· ≠ ·))
+    (hmem : sender ∈ xs) (hnd : xs.Nodup)
     (hsol : s.reserves = creditSum s.credit xs) :
     (deposit s sender value).reserves = creditSum (deposit s sender value).credit xs := by
   have hfun :
@@ -219,7 +206,7 @@ theorem P4_deposit_preserves_solvency
 theorem P4_withdraw_preserves_solvency
     (s : State) (sender : Address) (amount : Wei) (s' : State) (xs : List Address)
     (hok : withdraw s sender amount = .ok s')
-    (hmem : sender ∈ xs) (hnd : xs.Pairwise (· ≠ ·))
+    (hmem : sender ∈ xs) (hnd : xs.Nodup)
     (hsol : s.reserves = creditSum s.credit xs) :
     s'.reserves = creditSum s'.credit xs := by
   obtain ⟨hle, _, hs⟩ := withdraw_ok_inv hok
@@ -246,5 +233,99 @@ theorem P4_withdraw_preserves_solvency
     exact Nat.add_right_cancel h'
   subst hs
   simp [hsol, hfun, hA]
+
+/-- On a solvent vault a successful withdraw is covered by the reserves. The
+    `transfer` reserve shortfall cannot arise and `reserves - amount` is exact. -/
+theorem withdraw_ok_amount_le_reserves
+    (s : State) (sender : Address) (amount : Wei) (s' : State) (xs : List Address)
+    (hok : withdraw s sender amount = .ok s')
+    (hmem : sender ∈ xs) (hsol : s.reserves = creditSum s.credit xs) :
+    amount ≤ s.reserves := by
+  obtain ⟨hle, _, _⟩ := withdraw_ok_inv hok
+  rw [hsol]
+  exact Nat.le_trans hle (credit_le_sum s.credit sender xs hmem)
+
+/-- A transaction against the vault. -/
+inductive Op where
+  | deposit (sender : Address) (value : Wei)
+  | withdraw (sender : Address) (amount : Wei)
+
+/-- The caller of a transaction. -/
+def Op.sender : Op → Address
+  | .deposit a _ => a
+  | .withdraw a _ => a
+
+/-- One transaction. A reverted `withdraw` leaves the state untouched. -/
+def step (s : State) : Op → State
+  | .deposit sender value => deposit s sender value
+  | .withdraw sender amount =>
+    match withdraw s sender amount with
+    | .ok s' => s'
+    | .revert => s
+
+/-- A sequence of transactions, applied left to right. -/
+def run (s : State) : List Op → State
+  | [] => s
+  | o :: os => run (step s o) os
+
+theorem creditSum_zero (xs : List Address) : creditSum (fun _ => 0) xs = 0 := by
+  induction xs with
+  | nil => rfl
+  | cons a as ih => simp [creditSum, ih]
+
+/-- The deployed vault: no credit, no reserves, arbitrary receivers. -/
+def init (accepting : Address → Bool) : State :=
+  { credit := fun _ => 0, reserves := 0, accepting := accepting }
+
+/-- P4: the deployed vault is solvent on every support. -/
+theorem P4_init_solvent (accepting : Address → Bool) (xs : List Address) :
+    (init accepting).reserves = creditSum (init accepting).credit xs := by
+  simp [init, creditSum_zero]
+
+/-- P4 over traces: any sequence of transactions whose callers lie in the support
+    preserves solvency. -/
+theorem P4_run_preserves_solvency (xs : List Address) (hnd : xs.Nodup) :
+    ∀ ops : List Op, (∀ o ∈ ops, o.sender ∈ xs) →
+      ∀ s : State, s.reserves = creditSum s.credit xs →
+        (run s ops).reserves = creditSum (run s ops).credit xs := by
+  intro ops
+  induction ops with
+  | nil =>
+    intro _ s hsol
+    simpa [run] using hsol
+  | cons o os ih =>
+    intro hall s hsol
+    have hmem : o.sender ∈ xs := hall o (List.mem_cons_self)
+    have htl : ∀ p ∈ os, p.sender ∈ xs := fun p hp => hall p (List.mem_cons_of_mem o hp)
+    have hstep : (step s o).reserves = creditSum (step s o).credit xs := by
+      cases o with
+      | deposit sender value =>
+        exact P4_deposit_preserves_solvency s sender value xs hmem hnd hsol
+      | withdraw sender amount =>
+        simp only [step]
+        cases hw : withdraw s sender amount with
+        | ok s' =>
+          exact P4_withdraw_preserves_solvency s sender amount s' xs hw hmem hnd hsol
+        | revert => exact hsol
+    simpa [run] using ih htl (step s o) hstep
+
+/-- P4: every state reachable from the deployed vault is solvent. Solvency is a
+    conclusion here, not a hypothesis. -/
+theorem P4_reachable_solvent
+    (accepting : Address → Bool) (ops : List Op) (xs : List Address) (hnd : xs.Nodup)
+    (hall : ∀ o ∈ ops, o.sender ∈ xs) :
+    (run (init accepting) ops).reserves = creditSum (run (init accepting) ops).credit xs :=
+  P4_run_preserves_solvency xs hnd ops hall (init accepting) (P4_init_solvent accepting xs)
+
+/-- P2 on reachable states: a successful withdraw never exceeds the reserves, so the
+    `transfer` reserve shortfall omitted from `withdraw` is unreachable. -/
+theorem P2_reachable_withdraw_within_reserves
+    (accepting : Address → Bool) (ops : List Op) (xs : List Address) (hnd : xs.Nodup)
+    (hall : ∀ o ∈ ops, o.sender ∈ xs) (sender : Address) (hmem : sender ∈ xs)
+    (amount : Wei) (s' : State)
+    (hok : withdraw (run (init accepting) ops) sender amount = .ok s') :
+    amount ≤ (run (init accepting) ops).reserves :=
+  withdraw_ok_amount_le_reserves _ sender amount s' xs hok hmem
+    (P4_reachable_solvent accepting ops xs hnd hall)
 
 end SimpleBank
