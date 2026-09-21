@@ -4,7 +4,7 @@ permissions: {}
 
 # Kept out of the main CI workflow: building an executable against the EVM
 # semantics compiles native objects for the whole Mathlib import closure, which
-# the olean cache does not carry. Expect tens of minutes on a cold run.
+# the olean cache does not carry. Around five minutes on a cold run.
 on:
   push:
     paths:
@@ -22,7 +22,7 @@ jobs:
   evm-lean:
     name: SimpleBank on the EVMYulLean semantics
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 45
     permissions:
       contents: read
     defaults:

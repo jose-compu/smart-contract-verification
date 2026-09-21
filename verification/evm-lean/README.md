@@ -87,7 +87,7 @@ lake build
 lake exe simplebank-evm
 ```
 
-A cold run takes about half an hour and just under 6 GB of disk. The olean cache covers Mathlib's `.olean` files but not the native objects, and an executable has to be linked because of the keccak FFI, so the C compilation of Mathlib's import closure dominates. That is why CI keeps this in its own workflow, triggered only when this folder or `src/SimpleBank.sol` changes.
+A cold run on a GitHub runner takes five and a half minutes, split as 90 seconds fetching Mathlib oleans and under four minutes building, and needs just under 6 GB of disk. The olean cache carries Mathlib's `.olean` files but not its native objects, and the keccak FFI forces an executable to be linked, so about a thousand C objects are compiled on the way. CI keeps this in its own path-filtered workflow so that cost lands only on changes to this folder or `src/SimpleBank.sol`.
 
 After `src/SimpleBank.sol` changes, `./check-bytecode.sh` reports whether `bankRuntimeHex` needs updating.
 
