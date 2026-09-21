@@ -97,6 +97,8 @@ forge script script/Deploy.s.sol:DeploySimpleBank --broadcast --rpc-url http://1
 
 The Lean 4 experiment is [`verification/lean/`](verification/lean/): kernel-checked proofs of `SimpleBank` ([lean-lang.org](https://lean-lang.org/)).
 
+The Verity experiment is [`verification/verity/`](verification/verity/): the same vault rewritten as a Verity contract, so the EDSL term is what gets proved and what the verified compiler lowers toward Yul. It is not a check of `src/SimpleBank.sol`.
+
 ### Classification
 
 Tools are grouped by *how they argue*, not by vendor. The guarantee column is the usual ceiling, not a promise on `SimpleBank`.

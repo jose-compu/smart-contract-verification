@@ -1,0 +1,20 @@
+name = "simpleBankVerity"
+version = "0.1.0"
+defaultTargets = ["SimpleBankVerity", "simplebank-verity"]
+
+# Pinned so the proofs here are checked against one known compiler revision.
+# Bumping this is a semantic change: re-run `lake build` and the Yul emission.
+[[require]]
+name = "verity"
+git = "https://github.com/lfglabs-dev/verity.git"
+rev = "87aa890400f03cbb1b8122659887e0e3f43363ea"
+
+[[lean_lib]]
+name = "SimpleBankVerity"
+
+# `supportInterpreter` mirrors Verity's own `verity-compiler`: emitting Yul
+# evaluates typed-interface terms through the Lean interpreter.
+[[lean_exe]]
+name = "simplebank-verity"
+root = "Main"
+supportInterpreter = true
