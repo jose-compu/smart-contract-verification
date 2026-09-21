@@ -20,6 +20,8 @@ bytecode-coverage/
 
 # Lean / Lake
 verification/lean/.lake/
+verification/verity/.lake/
+verification/verity/artifacts/
 
 # OS
 .DS_Store

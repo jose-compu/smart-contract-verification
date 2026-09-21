@@ -1,0 +1,56 @@
+name: Verity
+
+permissions: {}
+
+# Separate from the Foundry workflow. The first run fetches the Mathlib olean
+# cache and builds Verity's compiler; later runs reuse the runner cache.
+on:
+  push:
+    paths:
+      - "verification/verity/**"
+      - ".github/workflows/verity.yml"
+  pull_request:
+    paths:
+      - "verification/verity/**"
+      - ".github/workflows/verity.yml"
+  workflow_dispatch:
+
+jobs:
+  verity:
+    name: SimpleBank as a Verity contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: verification/verity
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Install elan
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Show Lean version
+        run: |
+          lake --version
+          lean --version
+
+      - name: Fetch dependencies and the Mathlib olean cache
+        run: |
+          lake update
+          # The pinned EVMYulLean fork clones its conformance fixtures unless
+          # this directory already exists. This package does not run them.
+          mkdir -p .lake/packages/evmyul/EthereumTests
+          lake exe cache get
+
+      - name: Check the proofs
+        run: lake build
+
+      - name: Compile to Yul under every trust gate
+        run: lake exe simplebank-verity
