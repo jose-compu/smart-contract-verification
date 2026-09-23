@@ -87,10 +87,10 @@ jobs:
         run: |
           set -eu
           docker run --rm \
-            --user "$(id -u):$(id -g)" \
+            --user 0:0 \
             --entrypoint bash \
             -e HOME=/tmp \
             -v "$PWD":/work \
             -w /work \
             coqorg/coq:8.20 \
-            -c 'set -eu; export PATH="$(echo /home/coq/.opam/*/bin):$PATH"; make -C verification/coq; make -C verification/evm-coq'
+            .github/coq-ci.sh
