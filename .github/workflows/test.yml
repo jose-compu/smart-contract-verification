@@ -84,10 +84,13 @@ jobs:
           persist-credentials: false
 
       - name: Check the plain vault and the coq-evm embedding
-        uses: coq-community/docker-coq-action@v1
-        with:
-          custom_image: coqorg/coq:8.20
-          custom_script: |
-            set -eu
-            make -C verification/coq
-            make -C verification/evm-coq
+        run: |
+          set -eu
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --entrypoint bash \
+            -e HOME=/tmp \
+            -v "$PWD":/work \
+            -w /work \
+            coqorg/coq:8.20 \
+            -c 'set -eu; export PATH="$(echo /home/coq/.opam/*/bin):$PATH"; make -C verification/coq; make -C verification/evm-coq'
