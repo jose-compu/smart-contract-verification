@@ -25,7 +25,7 @@ Class: automated deductive / SMT. Solver: z3, as a Horn solver (Spacer) behind `
 
 ## Run
 
-solc 0.8.24 and `z3` on `PATH`. CI uses the solc 0.8.24 static Linux binary and z3 4.13.0.
+solc 0.8.24 and `z3` on `PATH`. The Linux `solc` binary loads `libz3.so.4.12`, so CI pins z3 4.12.2 and puts that library on `LD_LIBRARY_PATH`. A newer `z3` binary is not a substitute: without `libz3.so.4.12`, CHC is skipped.
 
 ```shell
 verification/smtchecker/run.sh
