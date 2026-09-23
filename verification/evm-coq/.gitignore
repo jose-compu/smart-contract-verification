@@ -1,0 +1,9 @@
+deps/
+*.vo
+*.vok
+*.vos
+*.glob
+*.aux
+.lia.cache
+assumptions-*.txt.out
+.lia.cache

@@ -72,3 +72,25 @@ jobs:
           build: "true"
           test: "false"
           lint: "false"
+
+  coq:
+    name: Coq
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Check the plain vault and the coq-evm embedding
+        run: |
+          set -eu
+          docker run --rm \
+            --user 0:0 \
+            --entrypoint bash \
+            -e HOME=/tmp \
+            -v "$PWD":/work \
+            -w /work \
+            coqorg/coq:8.20 \
+            .github/coq-ci.sh

@@ -21,5 +21,21 @@ bytecode-coverage/
 # Lean / Lake
 verification/lean/.lake/
 
+# Coq build products and fetched academic libraries
+verification/coq/*.vo
+verification/coq/*.vok
+verification/coq/*.vos
+verification/coq/*.glob
+verification/coq/assumptions-*.txt.out
+verification/coq/.lia.cache
+verification/evm-coq/*.vo
+verification/evm-coq/*.vok
+verification/evm-coq/*.vos
+verification/evm-coq/*.glob
+verification/evm-coq/assumptions-*.txt.out
+verification/evm-coq/.lia.cache
+verification/evm-coq/deps/
+
 # OS
 .DS_Store
+.lia.cache
