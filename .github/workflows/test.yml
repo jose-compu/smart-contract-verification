@@ -94,11 +94,13 @@ jobs:
             https://github.com/Z3Prover/z3/releases/download/z3-4.12.2/z3-4.12.2-x64-glibc-2.35.zip
           unzip -q "$RUNNER_TEMP/z3.zip" -d "$RUNNER_TEMP/z3src"
           z3bin=$(find "$RUNNER_TEMP/z3src" -type f -name z3 -print -quit)
-          z3lib=$(find "$RUNNER_TEMP/z3src" -type f -name 'libz3.so*' -print -quit)
+          z3lib=$(find "$RUNNER_TEMP/z3src" -type f -name libz3.so -print -quit)
           test -n "$z3bin"
           test -n "$z3lib"
+          # solc loads libz3.so.4.12 via dlmopen, which ignores LD_LIBRARY_PATH.
+          sudo ln -sf "$z3lib" /usr/local/lib/libz3.so.4.12
+          sudo ldconfig
           echo "$(dirname "$z3bin")" >> "$GITHUB_PATH"
-          echo "LD_LIBRARY_PATH=$(dirname "$z3lib")" >> "$GITHUB_ENV"
           echo "SOLC=$RUNNER_TEMP/solc" >> "$GITHUB_ENV"
 
       - name: Prove SimpleBank assertions
