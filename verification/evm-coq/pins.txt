@@ -1,0 +1,15 @@
+# Pinned academic libraries for verification/evm-coq.
+# Fetched by deps.sh into deps/. Not vendored.
+# The pin file is not named DEPS: on a case-insensitive volume that name
+# collides with the deps/ directory.
+#
+# bbv (MIT) — 256-bit words used by the Coq EVM embeddings.
+# https://github.com/mit-plv/bbv/commit/5ddb730f10a23f022e850b411098b64d4e3525ed
+#
+# coq-evm (LGPL-3.0) — concrete EVM interpreter. The embedding FORVES cites
+# as its departing point (ivan71kmayshan27, 2020). CALL, SHA3, CREATE, and
+# contract creation are NotImplemented. Two lemmas in that file are Admitted;
+# the theorems in SimpleBankEVM.v do not use them.
+# https://github.com/ivan71kmayshan27/coq-evm/commit/ea40f62b5536c2a9229983b65c9ae85711d24a7e
+bbv 5ddb730f10a23f022e850b411098b64d4e3525ed
+coq-evm ea40f62b5536c2a9229983b65c9ae85711d24a7e

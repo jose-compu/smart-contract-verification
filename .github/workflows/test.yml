@@ -72,3 +72,22 @@ jobs:
           build: "true"
           test: "false"
           lint: "false"
+
+  coq:
+    name: Coq
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Check the plain vault and the coq-evm embedding
+        uses: coq-community/docker-coq-action@v1
+        with:
+          custom_image: coqorg/coq:8.20
+          custom_script: |
+            set -eu
+            make -C verification/coq
+            make -C verification/evm-coq
