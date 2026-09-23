@@ -97,6 +97,8 @@ forge script script/Deploy.s.sol:DeploySimpleBank --broadcast --rpc-url http://1
 
 The Lean 4 experiment is [`verification/lean/`](verification/lean/): kernel-checked proofs of `SimpleBank` ([lean-lang.org](https://lean-lang.org/)).
 
+The SMTChecker baseline is [`verification/smtchecker/`](verification/smtchecker/): `solc`'s CHC engine on the same credit update and `transfer`, with Solidity `assert`s and no second spec language.
+
 ### Classification
 
 Tools are grouped by *how they argue*, not by vendor. The guarantee column is the usual ceiling, not a promise on `SimpleBank`.
@@ -157,7 +159,7 @@ The split in that last column is the whole trade-off. Everything in the verified
 You state properties; an SMT or CHC solver tries to prove them or return a counterexample. Little or no interactive proof.
 
 - **Certora CVL** — Certora Verification Language: rules, invariants, and ghosts checked against *compiled bytecode*. Fits `SimpleBank` directly (`deposit` credits `msg.value`; `withdraw` reverts when credit is short; sum of credits equals native balance if ETH only enters via `deposit`).
-- **Solidity SMTChecker** — `solc` built-in CHC/SMT checker. Assertions and `require`s are proved or refuted on the Solidity AST. Zero extra spec language; a good baseline on this small contract.
+- **Solidity SMTChecker** — `solc` built-in CHC checker ([smtchecker](https://docs.soliditylang.org/en/latest/smtchecker.html)). Assertions and `require`s are proved or refuted on the Solidity AST. There is no second spec language. The baseline is [`verification/smtchecker/`](verification/smtchecker/): solc 0.8.24, the CHC engine, and z3. It proves the deposit and withdraw accounting assertions, including that another address's credit is unchanged, and that a ghost of net credits moves with those updates. It does not prove that ghost equals the native balance, and it treats `transfer` as an untrusted external call.
 - **Dafny** — Verification-aware language (pre/post, invariants) compiled to Boogie/SMT. Model `SimpleBank` in Dafny; the EVM gap is trusted.
 - **F\*** — Effectful functional language with SMT and tactic proofs. Same pattern: a verified model, not the on-chain compiler.
 - **Why3** — Deductive platform with pluggable solvers. Useful as a backend for a hand-written vault spec.
