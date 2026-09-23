@@ -25,7 +25,7 @@ Class: automated deductive / SMT. Solver: z3, as a Horn solver (Spacer) behind `
 
 ## Run
 
-solc 0.8.24 and `z3` on `PATH`. The Linux `solc` binary loads `libz3.so.4.12` with `dlmopen`, which does not use `LD_LIBRARY_PATH`. CI installs z3 4.12.2 as that filename under `/usr/local/lib` and runs `ldconfig`. A newer `z3` binary is not a substitute.
+solc 0.8.24 and `z3` on `PATH`. The Linux `solc` binary loads `libz3.so.4.12` with `dlmopen`, which does not use `LD_LIBRARY_PATH`. CI copies z3 4.12.2 to that filename under `/usr/lib`. A newer `z3` binary is not a substitute.
 
 ```shell
 verification/smtchecker/run.sh

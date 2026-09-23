@@ -97,9 +97,28 @@ jobs:
           z3lib=$(find "$RUNNER_TEMP/z3src" -type f -name libz3.so -print -quit)
           test -n "$z3bin"
           test -n "$z3lib"
-          # solc loads libz3.so.4.12 via dlmopen, which ignores LD_LIBRARY_PATH.
-          sudo ln -sf "$z3lib" /usr/local/lib/libz3.so.4.12
+          # solc calls dlmopen("libz3.so.4.12"). That lookup uses the default
+          # linker directories, not LD_LIBRARY_PATH, and ldconfig indexes the SONAME.
+          sudo cp "$z3lib" /usr/lib/libz3.so.4.12
+          sudo cp "$z3lib" /usr/lib/x86_64-linux-gnu/libz3.so.4.12
           sudo ldconfig
+          ldconfig -p | grep z3
+          cat > "$RUNNER_TEMP/z3load.c" <<'EOF'
+          #define _GNU_SOURCE
+          #include <dlfcn.h>
+          #include <stdio.h>
+          int main(void) {
+            void *h = dlmopen(LM_ID_NEWLM, "libz3.so.4.12", RTLD_NOW);
+            if (!h) {
+              fprintf(stderr, "dlmopen: %s\n", dlerror());
+              return 1;
+            }
+            printf("dlmopen libz3.so.4.12 ok\n");
+            return 0;
+          }
+          EOF
+          gcc -o "$RUNNER_TEMP/z3load" "$RUNNER_TEMP/z3load.c" -ldl
+          "$RUNNER_TEMP/z3load"
           echo "$(dirname "$z3bin")" >> "$GITHUB_PATH"
           echo "SOLC=$RUNNER_TEMP/solc" >> "$GITHUB_ENV"
 
