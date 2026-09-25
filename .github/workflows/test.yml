@@ -72,3 +72,26 @@ jobs:
           build: "true"
           test: "false"
           lint: "false"
+
+  isabelle:
+    name: Isabelle
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Install Isabelle 2025-2
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o "$RUNNER_TEMP/isabelle.tar.gz" \
+            https://www.cl.cam.ac.uk/research/hvg/Isabelle/dist/Isabelle2025-2_linux.tar.gz
+          sudo tar -xzf "$RUNNER_TEMP/isabelle.tar.gz" -C /opt
+          echo /opt/Isabelle2025-2/bin >> "$GITHUB_PATH"
+          /opt/Isabelle2025-2/bin/isabelle version
+
+      - name: Check SimpleBank
+        run: verification/isabelle/run.sh

@@ -1,0 +1,4 @@
+session "SimpleBank" = HOL +
+  options [document = false]
+  theories
+    SimpleBank
