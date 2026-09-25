@@ -1,0 +1,278 @@
+(* Why3 model of src/SimpleBank.sol.
+   Deductive proof: pre/post and lemmas, discharged by an SMT solver.
+   Abstract vault, not an EVM interpreter. Wei is unbounded int.
+   Solidity uint256 overflow is not modelled. *)
+
+module SimpleBank
+
+  use int.Int
+  use bool.Bool
+  use map.Map
+  use map.Const
+  use list.List
+  use list.Mem
+
+  type address = int
+  type wei = int
+
+  type state = {
+    credit: map address wei;
+    reserves: wei;
+    rejecting: map address bool;
+    held: map address wei;
+  }
+
+  type result = Revert | Success state
+
+  type op =
+    | DepositOp address wei
+    | WithdrawOp address wei
+
+  predicate nodup (xs: list address) =
+    match xs with
+    | Nil -> true
+    | Cons a tl -> not (mem a tl) && nodup tl
+    end
+
+  let rec function sum (m: map address wei) (xs: list address) : wei
+    variant { xs }
+  = match xs with
+    | Nil -> 0
+    | Cons a tl -> get m a + sum m tl
+    end
+
+  predicate nonneg (m: map address wei) = forall a. 0 <= get m a
+
+  predicate support_closed (m: map address wei) (xs: list address) =
+    forall a. get m a <> 0 -> mem a xs
+
+  predicate solvent (s: state) (xs: list address) =
+    nodup xs && support_closed s.credit xs && s.reserves = sum s.credit xs
+    && nonneg s.credit && 0 <= s.reserves
+
+  constant empty_int : map address wei = const 0
+  constant empty_bool : map address bool = const False
+
+  function init (rejecting: map address bool) : state
+  = { credit = empty_int; reserves = 0; rejecting = rejecting; held = empty_int }
+
+  function deposit (s: state) (sender: address) (value: wei) : state
+  = { s with
+      credit = set s.credit sender (get s.credit sender + value);
+      reserves = s.reserves + value }
+
+  predicate withdraw_ok (s: state) (sender: address) (amount: wei) =
+    0 <= amount &&
+    amount <= get s.credit sender &&
+    get s.rejecting sender = False &&
+    amount <= s.reserves
+
+  function withdraw (s: state) (sender: address) (amount: wei) : result
+  = if withdraw_ok s sender amount then
+      Success { s with
+        credit = set s.credit sender (get s.credit sender - amount);
+        reserves = s.reserves - amount;
+        held = set s.held sender (get s.held sender + amount) }
+    else
+      Revert
+
+  function op_sender (o: op) : address
+  = match o with
+    | DepositOp a _ -> a
+    | WithdrawOp a _ -> a
+    end
+
+  function step (s: state) (o: op) : state
+  = match o with
+    | DepositOp a v -> deposit s a v
+    | WithdrawOp a k ->
+        match withdraw s a k with
+        | Revert -> s
+        | Success s' -> s'
+        end
+    end
+
+  let rec ghost function run (s: state) (ops: list op) : state
+    variant { ops }
+  = match ops with
+    | Nil -> s
+    | Cons o tl -> run (step s o) tl
+    end
+
+  predicate senders_in (ops: list op) (xs: list address) =
+    match ops with
+    | Nil -> true
+    | Cons o tl -> mem (op_sender o) xs && senders_in tl xs
+    end
+
+  predicate deposits_nonneg (ops: list op) =
+    match ops with
+    | Nil -> true
+    | Cons (DepositOp _ v) tl -> 0 <= v && deposits_nonneg tl
+    | Cons (WithdrawOp _ _) tl -> deposits_nonneg tl
+    end
+
+  (* --- lemmas the goals rely on --- *)
+
+  let rec lemma sum_not_mem (m: map address wei) (a: address) (v: wei)
+                             (xs: list address)
+    requires { not (mem a xs) }
+    ensures  { sum (set m a v) xs = sum m xs }
+    variant  { xs }
+  = match xs with
+    | Nil -> ()
+    | Cons _ tl -> sum_not_mem m a v tl
+    end
+
+  let rec lemma sum_nonneg (m: map address wei) (xs: list address)
+    requires { nonneg m }
+    ensures  { 0 <= sum m xs }
+    variant  { xs }
+  = match xs with
+    | Nil -> ()
+    | Cons _ tl -> sum_nonneg m tl
+    end
+
+  let rec lemma credit_le_sum (m: map address wei) (a: address) (xs: list address)
+    requires { nodup xs }
+    requires { mem a xs }
+    requires { nonneg m }
+    ensures  { get m a <= sum m xs }
+    variant  { xs }
+  = match xs with
+    | Nil -> absurd
+    | Cons h tl ->
+        if h = a then sum_nonneg m tl
+        else (credit_le_sum m a tl; sum_nonneg m (Cons h Nil))
+    end
+
+  let rec lemma sum_plus (m: map address wei) (a: address) (v: wei)
+                          (xs: list address)
+    requires { nodup xs }
+    requires { mem a xs }
+    ensures  { sum (set m a (get m a + v)) xs = sum m xs + v }
+    variant  { xs }
+  = match xs with
+    | Nil -> absurd
+    | Cons h tl -> if h = a then sum_not_mem m a (get m a + v) tl
+                   else sum_plus m a v tl
+    end
+
+  let rec lemma sum_minus (m: map address wei) (a: address) (k: wei)
+                           (xs: list address)
+    requires { nodup xs }
+    requires { mem a xs }
+    requires { nonneg m }
+    requires { 0 <= k <= get m a }
+    ensures  { sum (set m a (get m a - k)) xs = sum m xs - k }
+    variant  { xs }
+  = match xs with
+    | Nil -> absurd
+    | Cons h tl -> if h = a then sum_not_mem m a (get m a - k) tl
+                   else sum_minus m a k tl
+    end
+
+  let rec lemma sum_zero (xs: list address)
+    ensures { sum empty_int xs = 0 }
+    variant { xs }
+  = match xs with
+    | Nil -> ()
+    | Cons _ tl -> sum_zero tl
+    end
+
+  (* P1 *)
+  goal p1_credit:
+    forall s sender value.
+    get (deposit s sender value).credit sender
+      = get s.credit sender + value
+
+  goal p1_reserves:
+    forall s sender value.
+    (deposit s sender value).reserves = s.reserves + value
+
+  (* P3 *)
+  goal p3_deposit:
+    forall s sender other value.
+    other <> sender ->
+    get (deposit s sender value).credit other = get s.credit other
+
+  goal p3_withdraw:
+    forall s sender other amount.
+    other <> sender -> withdraw_ok s sender amount ->
+    match withdraw s sender amount with
+    | Success s' -> get s'.credit other = get s.credit other
+    | Revert -> false
+    end
+
+  (* P2 *)
+  goal p2_success_effect:
+    forall s sender amount.
+    withdraw_ok s sender amount ->
+    match withdraw s sender amount with
+    | Success s' ->
+        get s'.credit sender = get s.credit sender - amount &&
+        s'.reserves = s.reserves - amount &&
+        get s'.held sender = get s.held sender + amount
+    | Revert -> false
+    end
+
+  goal p2_succeeds_iff:
+    forall s xs sender amount.
+    solvent s xs -> 0 <= amount ->
+    (withdraw_ok s sender amount <->
+       amount <= get s.credit sender && get s.rejecting sender = False)
+
+  (* P5 *)
+  goal p5_rejecting:
+    forall s sender amount.
+    get s.rejecting sender = True ->
+    withdraw s sender amount = Revert
+
+  goal p5_step_unchanged:
+    forall s sender amount.
+    get s.rejecting sender = True ->
+    step s (WithdrawOp sender amount) = s
+
+  (* P4 *)
+  goal p4_init:
+    forall rejecting xs.
+    nodup xs -> solvent (init rejecting) xs
+
+  goal p4_deposit:
+    forall s xs sender value.
+    solvent s xs -> mem sender xs -> 0 <= value ->
+    solvent (deposit s sender value) xs
+
+  goal p4_withdraw:
+    forall s xs sender amount.
+    solvent s xs ->
+    solvent (step s (WithdrawOp sender amount)) xs
+
+  let rec lemma step_preserves (s: state) (o: op) (xs: list address)
+    requires { solvent s xs }
+    requires { mem (op_sender o) xs }
+    requires { deposits_nonneg (Cons o Nil) }
+    ensures  { solvent (step s o) xs }
+    variant  { o }
+  = match o with
+    | DepositOp _ _ -> ()
+    | WithdrawOp _ _ -> ()
+    end
+
+  let rec lemma p4_run (s: state) (ops: list op) (xs: list address)
+    requires { solvent s xs }
+    requires { senders_in ops xs }
+    requires { deposits_nonneg ops }
+    ensures  { solvent (run s ops) xs }
+    variant  { ops }
+  = match ops with
+    | Nil -> ()
+    | Cons o tl -> step_preserves s o xs; p4_run (step s o) tl xs
+    end
+
+  goal p4_reachable:
+    forall rejecting ops xs.
+    nodup xs -> senders_in ops xs -> deposits_nonneg ops ->
+    solvent (run (init rejecting) ops) xs
+
+end

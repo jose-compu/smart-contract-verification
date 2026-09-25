@@ -97,6 +97,8 @@ forge script script/Deploy.s.sol:DeploySimpleBank --broadcast --rpc-url http://1
 
 The Lean 4 experiment is [`verification/lean/`](verification/lean/): kernel-checked proofs of `SimpleBank` ([lean-lang.org](https://lean-lang.org/)).
 
+The Why3 experiment is [`verification/why3/`](verification/why3/): the same vault, with proof obligations discharged by Alt-Ergo ([why3.org](https://www.why3.org/)). It is not a check of `src/SimpleBank.sol`.
+
 ### Classification
 
 Tools are grouped by *how they argue*, not by vendor. The guarantee column is the usual ceiling, not a promise on `SimpleBank`.
@@ -160,7 +162,7 @@ You state properties; an SMT or CHC solver tries to prove them or return a count
 - **Solidity SMTChecker** — `solc` built-in CHC/SMT checker. Assertions and `require`s are proved or refuted on the Solidity AST. Zero extra spec language; a good baseline on this small contract.
 - **Dafny** — Verification-aware language (pre/post, invariants) compiled to Boogie/SMT. Model `SimpleBank` in Dafny; the EVM gap is trusted.
 - **F\*** — Effectful functional language with SMT and tactic proofs. Same pattern: a verified model, not the on-chain compiler.
-- **Why3** — Deductive platform with pluggable solvers. Useful as a backend for a hand-written vault spec.
+- **Why3** — Deductive platform with pluggable solvers. The model is [`verification/why3/`](verification/why3/). Alt-Ergo discharges the obligations; the EVM gap is trusted.
 
 #### Relational model finding (bounded SAT)
 
@@ -214,6 +216,7 @@ Created only when an experiment exists.
 | `verification/deepsea/` | Verified compilation | DeepSEA |
 | `verification/certora/` | Automated deductive / SMT | Certora CVL |
 | `verification/smtchecker/` | Automated deductive / SMT | Solidity SMTChecker |
+| `verification/why3/` | Automated deductive / SMT | Why3 |
 | `verification/alloy/` | Relational model finding | Alloy |
 | `verification/dynalloy/` | Relational model finding | DynAlloy |
 | `verification/halmos/` | Symbolic execution | Halmos |
