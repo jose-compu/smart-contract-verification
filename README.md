@@ -97,6 +97,8 @@ forge script script/Deploy.s.sol:DeploySimpleBank --broadcast --rpc-url http://1
 
 The Lean 4 experiment is [`verification/lean/`](verification/lean/): kernel-checked proofs of `SimpleBank` ([lean-lang.org](https://lean-lang.org/)).
 
+The Dafny experiment is [`verification/dafny/`](verification/dafny/): the same vault with preconditions, postconditions, and a solvency invariant, checked by Boogie and Z3 ([dafny.org](https://dafny.org/)). It is not a check of `src/SimpleBank.sol`.
+
 ### Classification
 
 Tools are grouped by *how they argue*, not by vendor. The guarantee column is the usual ceiling, not a promise on `SimpleBank`.
@@ -158,7 +160,7 @@ You state properties; an SMT or CHC solver tries to prove them or return a count
 
 - **Certora CVL** — Certora Verification Language: rules, invariants, and ghosts checked against *compiled bytecode*. Fits `SimpleBank` directly (`deposit` credits `msg.value`; `withdraw` reverts when credit is short; sum of credits equals native balance if ETH only enters via `deposit`).
 - **Solidity SMTChecker** — `solc` built-in CHC/SMT checker. Assertions and `require`s are proved or refuted on the Solidity AST. Zero extra spec language; a good baseline on this small contract.
-- **Dafny** — Verification-aware language (pre/post, invariants) compiled to Boogie/SMT. Model `SimpleBank` in Dafny; the EVM gap is trusted.
+- **Dafny** — Verification-aware language (pre/post, invariants) compiled to Boogie/SMT. The model is [`verification/dafny/`](verification/dafny/). It is not the Solidity file; the EVM gap is trusted.
 - **F\*** — Effectful functional language with SMT and tactic proofs. Same pattern: a verified model, not the on-chain compiler.
 - **Why3** — Deductive platform with pluggable solvers. Useful as a backend for a hand-written vault spec.
 
@@ -214,6 +216,7 @@ Created only when an experiment exists.
 | `verification/deepsea/` | Verified compilation | DeepSEA |
 | `verification/certora/` | Automated deductive / SMT | Certora CVL |
 | `verification/smtchecker/` | Automated deductive / SMT | Solidity SMTChecker |
+| `verification/dafny/` | Automated deductive / SMT | Dafny |
 | `verification/alloy/` | Relational model finding | Alloy |
 | `verification/dynalloy/` | Relational model finding | DynAlloy |
 | `verification/halmos/` | Symbolic execution | Halmos |
