@@ -97,6 +97,8 @@ forge script script/Deploy.s.sol:DeploySimpleBank --broadcast --rpc-url http://1
 
 The Lean 4 experiment is [`verification/lean/`](verification/lean/): kernel-checked proofs of `SimpleBank` ([lean-lang.org](https://lean-lang.org/)).
 
+The Echidna experiment is [`verification/echidna/`](verification/echidna/): assertion fuzzing of deposit, withdraw, and a reverting receiver. A green campaign is not a proof.
+
 ### Classification
 
 Tools are grouped by *how they argue*, not by vendor. The guarantee column is the usual ceiling, not a promise on `SimpleBank`.
@@ -194,7 +196,7 @@ These *describe* behaviour. A separate engine checks it.
 
 Same invariants as verification, weaker conclusion.
 
-- **Echidna** — Coverage-guided fuzzer (Trail of Bits). Random and guided sequences of `deposit` / `withdraw` try to break invariants; a long green run is evidence, not a proof.
+- **Echidna** — Coverage-guided fuzzer (Trail of Bits). Random and guided sequences of `deposit` / `withdraw` try to break invariants; a long green run is evidence, not a proof. The campaign is [`verification/echidna/`](verification/echidna/).
 - **Medusa** — Parallel EVM fuzzer with similar goals. Useful as a second fuzzer on the same properties.
 
 #### Static analysis (not verification)
@@ -220,6 +222,7 @@ Created only when an experiment exists.
 | `verification/kontrol/` | Symbolic execution / KEVM | Kontrol |
 | `verification/hevm/` | Symbolic execution | hevm |
 | `verification/act/` | Spec overlay | Act |
+| `verification/echidna/` | Property-based testing | Echidna |
 
 ### Properties to compare across tools
 

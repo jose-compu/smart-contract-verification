@@ -1,0 +1,7 @@
+testMode: assertion
+testLimit: 10000
+seqLen: 40
+timeout: 180
+shrinkLimit: 200
+workers: 1
+codeSize: 24576
