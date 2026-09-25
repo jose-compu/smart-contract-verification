@@ -97,6 +97,8 @@ forge script script/Deploy.s.sol:DeploySimpleBank --broadcast --rpc-url http://1
 
 The Lean 4 experiment is [`verification/lean/`](verification/lean/): kernel-checked proofs of `SimpleBank` ([lean-lang.org](https://lean-lang.org/)).
 
+The Medusa experiment is [`verification/medusa/`](verification/medusa/): a second fuzzer on the same deposit, withdraw, and reverting-receiver asserts. A green campaign is not a proof.
+
 ### Classification
 
 Tools are grouped by *how they argue*, not by vendor. The guarantee column is the usual ceiling, not a promise on `SimpleBank`.
@@ -195,7 +197,7 @@ These *describe* behaviour. A separate engine checks it.
 Same invariants as verification, weaker conclusion.
 
 - **Echidna** — Coverage-guided fuzzer (Trail of Bits). Random and guided sequences of `deposit` / `withdraw` try to break invariants; a long green run is evidence, not a proof.
-- **Medusa** — Parallel EVM fuzzer with similar goals. Useful as a second fuzzer on the same properties.
+- **Medusa** — Parallel EVM fuzzer with similar goals. Useful as a second fuzzer on the same properties. The campaign is [`verification/medusa/`](verification/medusa/).
 
 #### Static analysis (not verification)
 
@@ -220,6 +222,7 @@ Created only when an experiment exists.
 | `verification/kontrol/` | Symbolic execution / KEVM | Kontrol |
 | `verification/hevm/` | Symbolic execution | hevm |
 | `verification/act/` | Spec overlay | Act |
+| `verification/medusa/` | Property-based testing | Medusa |
 
 ### Properties to compare across tools
 

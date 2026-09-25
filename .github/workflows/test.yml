@@ -72,3 +72,39 @@ jobs:
           build: "true"
           test: "false"
           lint: "false"
+
+  medusa:
+    name: Medusa
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install solc 0.8.24, crytic-compile, and Medusa 1.5.1
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/solc https://github.com/ethereum/solidity/releases/download/v0.8.24/solc-static-linux
+          chmod +x /tmp/solc
+          sudo install -m 0755 /tmp/solc /usr/local/bin/solc
+          pip install crytic-compile
+          curl -fsSL -o "$RUNNER_TEMP/medusa.tar.gz" \
+            https://github.com/crytic/medusa/releases/download/v1.5.1/medusa-linux-x64.tar.gz
+          tar -xzf "$RUNNER_TEMP/medusa.tar.gz" -C "$RUNNER_TEMP"
+          bin=$(find "$RUNNER_TEMP" -type f -name medusa -print -quit)
+          test -n "$bin"
+          sudo install -m 0755 "$bin" /usr/local/bin/medusa
+          medusa --version
+          solc --version
+
+      - name: Fuzz SimpleBank
+        run: verification/medusa/run.sh
