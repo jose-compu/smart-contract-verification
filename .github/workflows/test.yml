@@ -72,3 +72,27 @@ jobs:
           build: "true"
           test: "false"
           lint: "false"
+
+  scribble:
+    name: Scribble
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Install solc 0.8.24 and Scribble 0.7.10
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/solc https://github.com/ethereum/solidity/releases/download/v0.8.24/solc-static-linux
+          chmod +x /tmp/solc
+          sudo install -m 0755 /tmp/solc /usr/local/bin/solc
+          npm install --prefix "$RUNNER_TEMP/scribble" eth-scribble@0.7.10
+          echo "$RUNNER_TEMP/scribble/node_modules/.bin" >> "$GITHUB_PATH"
+          solc --version
+
+      - name: Instrument SimpleBank
+        run: verification/scribble/run.sh
