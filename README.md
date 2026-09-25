@@ -97,6 +97,8 @@ forge script script/Deploy.s.sol:DeploySimpleBank --broadcast --rpc-url http://1
 
 The Lean 4 experiment is [`verification/lean/`](verification/lean/): kernel-checked proofs of `SimpleBank` ([lean-lang.org](https://lean-lang.org/)).
 
+The Scribble experiment is [`verification/scribble/`](verification/scribble/): annotations compiled to runtime assertions. Scribble does not prove them.
+
 ### Classification
 
 Tools are grouped by *how they argue*, not by vendor. The guarantee column is the usual ceiling, not a promise on `SimpleBank`.
@@ -188,7 +190,7 @@ A formal operational model of the chain, then prove reachability claims on it.
 These *describe* behaviour. A separate engine checks it.
 
 - **Act** — Ethereum spec language (pre/post, storage updates, invariants) with SMT, Coq, and hevm backends. A `SimpleBank` Act spec can be discharged by more than one tool.
-- **Scribble** — In-source annotations compiled to assertions. Feeds fuzzers or Certora; it is not a prover.
+- **Scribble** — In-source annotations compiled to assertions. Feeds fuzzers or Certora; it is not a prover. The annotated copy is [`verification/scribble/`](verification/scribble/).
 
 #### Property-based testing (not proofs)
 
@@ -220,6 +222,7 @@ Created only when an experiment exists.
 | `verification/kontrol/` | Symbolic execution / KEVM | Kontrol |
 | `verification/hevm/` | Symbolic execution | hevm |
 | `verification/act/` | Spec overlay | Act |
+| `verification/scribble/` | Spec overlay | Scribble |
 
 ### Properties to compare across tools
 
