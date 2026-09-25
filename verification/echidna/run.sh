@@ -9,5 +9,6 @@ echidna verification/echidna/SimpleBankEchidna.sol \
   --contract SimpleBankEchidna \
   --config verification/echidna/echidna.yaml \
   --format text \
-  --corpus-dir "$corpus"
+  --corpus-dir "$corpus" \
+  --crytic-args "--compile-force-framework solc --solc-args=--allow-paths=$root"
 echo "echidna: assertion campaign finished"
