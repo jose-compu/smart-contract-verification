@@ -97,6 +97,8 @@ forge script script/Deploy.s.sol:DeploySimpleBank --broadcast --rpc-url http://1
 
 The Lean 4 experiment is [`verification/lean/`](verification/lean/): kernel-checked proofs of `SimpleBank` ([lean-lang.org](https://lean-lang.org/)).
 
+The Slither experiment is [`verification/slither/`](verification/slither/): the default detectors on `src/SimpleBank.sol`. It is pattern matching, not a proof.
+
 ### Classification
 
 Tools are grouped by *how they argue*, not by vendor. The guarantee column is the usual ceiling, not a promise on `SimpleBank`.
@@ -199,7 +201,7 @@ Same invariants as verification, weaker conclusion.
 
 #### Static analysis (not verification)
 
-- **Slither** — AST detectors (reentrancy, dead code, `transfer` stipend, and so on). Fast triage; does not prove the five properties below.
+- **Slither** — AST detectors (reentrancy, dead code, `transfer` stipend, and so on). Fast triage; does not prove the five properties below. The scan is [`verification/slither/`](verification/slither/).
 - **Aderyn** — Rust-based Solidity detector, same niche as Slither: pattern matching, not exhaustive reasoning.
 
 ### Planned `verification/` subfolders
@@ -220,6 +222,7 @@ Created only when an experiment exists.
 | `verification/kontrol/` | Symbolic execution / KEVM | Kontrol |
 | `verification/hevm/` | Symbolic execution | hevm |
 | `verification/act/` | Spec overlay | Act |
+| `verification/slither/` | Static analysis | Slither |
 
 ### Properties to compare across tools
 
