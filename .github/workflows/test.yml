@@ -72,3 +72,33 @@ jobs:
           build: "true"
           test: "false"
           lint: "false"
+
+  fstar:
+    name: F*
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Install F* 2026.09.20
+        run: |
+          set -euo pipefail
+          curl -fsSL -o "$RUNNER_TEMP/fstar.tar.gz" \
+            https://github.com/FStarLang/FStar/releases/download/v2026.09.20/fstar-v2026.09.20-Linux-x86_64.tar.gz
+          tar -xzf "$RUNNER_TEMP/fstar.tar.gz" -C "$RUNNER_TEMP"
+          bin=$(find "$RUNNER_TEMP" -type f -name fstar.exe -print -quit)
+          test -n "$bin"
+          echo "$(dirname "$bin")" >> "$GITHUB_PATH"
+          z3bin=$(find "$RUNNER_TEMP" -type f -path '*z3-4.15*/bin/z3' -print -quit)
+          if [ -z "$z3bin" ]; then
+            z3bin=$(find "$RUNNER_TEMP" -type f -name z3 -path '*/bin/z3' -print -quit)
+          fi
+          test -n "$z3bin"
+          echo "$(dirname "$z3bin")" >> "$GITHUB_PATH"
+
+      - name: Verify SimpleBank
+        run: verification/fstar/run.sh
