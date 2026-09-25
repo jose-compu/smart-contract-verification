@@ -72,3 +72,33 @@ jobs:
           build: "true"
           test: "false"
           lint: "false"
+
+  echidna:
+    name: Echidna
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Install solc 0.8.24 and Echidna 2.3.3
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/solc https://github.com/ethereum/solidity/releases/download/v0.8.24/solc-static-linux
+          chmod +x /tmp/solc
+          sudo install -m 0755 /tmp/solc /usr/local/bin/solc
+          curl -fsSL -o "$RUNNER_TEMP/echidna.tar.gz" \
+            https://github.com/crytic/echidna/releases/download/v2.3.3/echidna-2.3.3-x86_64-linux.tar.gz
+          tar -xzf "$RUNNER_TEMP/echidna.tar.gz" -C "$RUNNER_TEMP"
+          bin=$(find "$RUNNER_TEMP" -type f -name echidna -print -quit)
+          test -n "$bin"
+          sudo install -m 0755 "$bin" /usr/local/bin/echidna
+          echidna --version
+          solc --version
+
+      - name: Fuzz SimpleBank
+        run: verification/echidna/run.sh
