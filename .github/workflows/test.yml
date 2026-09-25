@@ -72,3 +72,29 @@ jobs:
           build: "true"
           test: "false"
           lint: "false"
+
+  aderyn:
+    name: Aderyn
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Install Aderyn 0.6.8
+        run: |
+          set -euo pipefail
+          curl -fsSL -o "$RUNNER_TEMP/aderyn.tar.xz" \
+            https://github.com/Cyfrin/aderyn/releases/download/aderyn-v0.6.8/aderyn-x86_64-unknown-linux-gnu.tar.xz
+          tar -xJf "$RUNNER_TEMP/aderyn.tar.xz" -C "$RUNNER_TEMP"
+          bin=$(find "$RUNNER_TEMP" -type f -name aderyn -print -quit)
+          test -n "$bin"
+          sudo install -m 0755 "$bin" /usr/local/bin/aderyn
+          aderyn --version
+
+      - name: Scan SimpleBank
+        run: verification/aderyn/run.sh
