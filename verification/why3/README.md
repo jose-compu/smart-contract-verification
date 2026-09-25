@@ -35,7 +35,7 @@ Wei is mathematical `int`. Deposit amounts on a trace are constrained by `deposi
 
 ## Run
 
-Why3 and Alt-Ergo on `PATH`.
+Why3 1.8.2 and Alt-Ergo 2.6.4 on `PATH`. Ubuntu 24.04 has no `alt-ergo` package, so CI builds these two versions with opam.
 
 ```shell
 verification/why3/run.sh
