@@ -20,7 +20,7 @@ Class: property-based testing. Tool: [crytic/echidna](https://github.com/crytic/
 
 ## Run
 
-Echidna 2.3.3, `crytic-compile`, and `solc` 0.8.24 on `PATH`. The Linux binary shells out to `crytic-compile`. `run.sh` forces the solc framework, because `foundry.toml` would otherwise make crytic-compile look for `forge`. Config: `echidna.yaml` (10,000 sequences, length 40, assertion mode).
+Echidna 2.3.3, `crytic-compile`, `solc` 0.8.24, and `forge` on `PATH`. The Linux binary shells out to `crytic-compile`, and current crytic-compile reads `foundry.toml` before it honours the solc override in `run.sh`. Config: `echidna.yaml` (10,000 sequences, length 40, assertion mode).
 
 ```shell
 verification/echidna/run.sh

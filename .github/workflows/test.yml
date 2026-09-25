@@ -85,6 +85,9 @@ jobs:
           persist-credentials: false
           submodules: recursive
 
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
       - name: Install Python
         uses: actions/setup-python@v5
         with:
