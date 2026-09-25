@@ -97,6 +97,8 @@ forge script script/Deploy.s.sol:DeploySimpleBank --broadcast --rpc-url http://1
 
 The Lean 4 experiment is [`verification/lean/`](verification/lean/): kernel-checked proofs of `SimpleBank` ([lean-lang.org](https://lean-lang.org/)).
 
+The Isabelle/HOL experiment is [`verification/isabelle/`](verification/isabelle/): the same vault, checked by the HOL kernel ([isabelle.in.tum.de](https://isabelle.in.tum.de/)). It is not a check of `src/SimpleBank.sol`.
+
 ### Classification
 
 Tools are grouped by *how they argue*, not by vendor. The guarantee column is the usual ceiling, not a promise on `SimpleBank`.
@@ -123,7 +125,7 @@ Kernel-checked mathematics. High assurance, high effort. The Solidity text is us
 - **EVM Lean (EVMYulLean)** — Executable Lean 4 semantics of the EVM and Yul ([NethermindEth/EVMYulLean](https://github.com/NethermindEth/EVMYulLean)), checked against Cancun tests. Use it as the *machine* on which bytecode or Yul is proved, rather than as a Solidity rewrite.
 - **Verity** — Lean 4 EDSL and verified compiler ([veritylang.com](https://veritylang.com/)). Spec, implementation, and proof are one artifact; compilation toward Yul/EVM is proved for a supported fragment. A `SimpleBank` port is a new Verity contract, not the current `.sol` file. See [verified compilation](#verified-compilation-and-certified-extraction) for the systems it is measured against.
 - **Coq** — Independent ITP. Same role as Lean: embed a vault model (or an EVM fragment) and prove theorems. Several academic EVM embeddings exist; none are wired to this repo yet.
-- **Isabelle/HOL** — Another ITP, historically used for bytecode and protocol proofs. A `SimpleBank` theory would be a HOL model plus lemmas, with a trusted step back to EVM if desired.
+- **Isabelle/HOL** — Another ITP, historically used for bytecode and protocol proofs. The model is [`verification/isabelle/`](verification/isabelle/). It is a HOL theory plus lemmas; the step back to the EVM is trusted.
 - **HOL4** — The prover behind CakeML. No EVM story of its own; listed because the verified-compiler results below are stated in it, so reading them means reading HOL4.
 
 #### Verified compilation and certified extraction
@@ -209,6 +211,7 @@ Created only when an experiment exists.
 | Subfolder | Class | Tool |
 | --- | --- | --- |
 | `verification/lean/` | Interactive theorem proving | Lean 4 |
+| `verification/isabelle/` | Interactive theorem proving | Isabelle/HOL |
 | `verification/evm-lean/` | Interactive theorem proving | EVMYulLean |
 | `verification/verity/` | Verified compilation | Verity |
 | `verification/deepsea/` | Verified compilation | DeepSEA |
