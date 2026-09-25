@@ -72,3 +72,22 @@ jobs:
           build: "true"
           test: "false"
           lint: "false"
+
+  dafny:
+    name: Dafny
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Install Dafny 4.11.0
+        uses: dafny-lang/setup-dafny-action@v1
+        with:
+          dafny-version: "4.11.0"
+
+      - name: Verify SimpleBank
+        run: verification/dafny/run.sh
