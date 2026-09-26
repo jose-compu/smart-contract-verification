@@ -28,4 +28,4 @@ The script fails unless Act reports the bytecode equivalent to the spec.
 
 ## Trust
 
-The EVM model is hevm's, and the storage layout is solc's. Act's `solc` is the one in that Nix build, which must accept pragma `0.8.24`. A passing check is equivalence of this spec and that bytecode, inside the fragment hevm explores. It is not a proof that every `uint256` trace of the chain preserves solvency, and it does not model a receiver that reverts inside the 2300-gas stipend unless the equivalence check rejects the spec for that reason.
+The EVM model is hevm's, and the storage layout is solc's. The Act Nix build does not put `solc` or `cvc5` on `PATH`, so the script uses the Solidity 0.8.24 static Linux binary and cvc5 from nixpkgs `354953266373`. A passing check is equivalence of this spec and that bytecode, inside the fragment hevm explores. It is not a proof that every `uint256` trace of the chain preserves solvency, and it does not model a receiver that reverts inside the 2300-gas stipend unless the equivalence check rejects the spec for that reason.
