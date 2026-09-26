@@ -1,0 +1,28 @@
+// Equivalence spec for the behaviours hevm can finish in src/SimpleBank.sol.
+// withdraw is omitted: it CALLs the caller via transfer, and hevm stops with
+// "call target has unknown code", so it has no success end state to compare.
+
+contract SimpleBank
+
+constructor()
+
+creates
+  mapping(address => uint256) balances := []
+
+transition deposit() payable
+
+iff
+  inRange(uint256, balances[CALLER] + CALLVALUE)
+  inRange(uint256, BALANCE + CALLVALUE)
+
+updates
+  balances := balances[CALLER => balances[CALLER] + CALLVALUE]
+  BALANCE := BALANCE + CALLVALUE
+
+transition balances(address account) : uint256
+
+iff
+  true
+
+returns
+  balances[account]
