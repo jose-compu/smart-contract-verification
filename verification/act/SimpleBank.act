@@ -1,7 +1,6 @@
-// Equivalence spec for src/SimpleBank.sol.
-// BALANCE is the contract's ETH balance. A non-payable constructor gets BALANCE := 0 implicitly.
-// withdraw's success case is the transfer succeeding. A reverting receiver is a bytecode path
-// this spec does not name; the equivalence check is what decides whether that path is in scope.
+// Equivalence spec for the behaviours hevm can finish in src/SimpleBank.sol.
+// withdraw is omitted: it CALLs the caller via transfer, and hevm stops with
+// "call target has unknown code", so it has no success end state to compare.
 
 contract SimpleBank
 
@@ -19,16 +18,6 @@ iff
 updates
   balances := balances[CALLER => balances[CALLER] + CALLVALUE]
   BALANCE := BALANCE + CALLVALUE
-
-transition withdraw(uint256 amount)
-
-iff
-  balances[CALLER] >= amount
-  BALANCE >= amount
-
-updates
-  balances := balances[CALLER => balances[CALLER] - amount]
-  BALANCE := BALANCE - amount
 
 transition balances(address account) : uint256
 

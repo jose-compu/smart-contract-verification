@@ -1,6 +1,6 @@
 # Act spec of SimpleBank
 
-Equivalence between [`src/SimpleBank.sol`](../../src/SimpleBank.sol) and [`SimpleBank.act`](SimpleBank.act), checked by **Act** at `de0f98e` (the `ethereum/act` commit pinned in `run.sh`) through its hevm backend.
+Equivalence between the `deposit` and `balances` behaviours of [`src/SimpleBank.sol`](../../src/SimpleBank.sol) and [`SimpleBank.act`](SimpleBank.act), checked by **Act** at `de0f98e` (the `ethereum/act` commit pinned in `run.sh`) through its hevm backend.
 
 Class: specification overlay. The check is bytecode equivalence, not a kernel-checked proof. The solver is cvc5.
 
@@ -9,12 +9,11 @@ Class: specification overlay. The check is bytecode equivalence, not a kernel-ch
 | Id | Transition | Claim |
 | --- | --- | --- |
 | P1 | `deposit` | When the additions fit in `uint256`, the caller's credit and the contract's ETH balance both increase by `CALLVALUE` |
-| P2 | `withdraw` | Succeeds when the caller's credit and the contract's ETH balance are both at least `amount`; then both decrease by `amount` |
-| P3 | `deposit`, `withdraw` | Only `balances[CALLER]` is written |
-| P4 | `deposit`, `withdraw` | `BALANCE` moves with the credit of the caller, by the same amount |
+| P3 | `deposit` | Only `balances[CALLER]` is written |
+| P4 | `deposit` | `BALANCE` increases by the same `CALLVALUE` as that credit |
 | — | `balances` | The public getter returns `balances[account]` and writes nothing |
 
-P5 (a reverting or gas-heavy receiver) is not a separate transition. `withdraw` in the source uses `transfer`. If that call can fail while the preconditions hold, equivalence fails and this README is wrong until the spec is narrowed.
+`withdraw` is not in the spec. A first run that included it was not equivalent: hevm reported `call target has unknown code` on the `CALL` inside `transfer` (program counter 386) and produced no success end state, while the spec still accepted withdrawals. P2 and P5 are that call. They are not claimed here.
 
 ## Run
 

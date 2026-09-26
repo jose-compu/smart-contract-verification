@@ -97,7 +97,7 @@ forge script script/Deploy.s.sol:DeploySimpleBank --broadcast --rpc-url http://1
 
 The Lean 4 experiment is [`verification/lean/`](verification/lean/): kernel-checked proofs of `SimpleBank` ([lean-lang.org](https://lean-lang.org/)).
 
-The Act experiment is [`verification/act/`](verification/act/): an Act spec of the same vault, checked for equivalence against the bytecode of `src/SimpleBank.sol` by Act's hevm backend.
+The Act experiment is [`verification/act/`](verification/act/): an Act spec of `deposit` and the `balances` getter, checked for equivalence against the bytecode of `src/SimpleBank.sol` by Act's hevm backend. `withdraw` is outside that check.
 
 ### Classification
 
