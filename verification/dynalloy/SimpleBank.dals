@@ -1,0 +1,103 @@
+open util/integer
+
+sig Addr {}
+
+sig State {
+  credit: Addr -> one Int,
+  reserves: Int
+}
+
+fun total[s: State]: Int {
+  sum a: Addr | s.credit[a]
+}
+
+pred nonneg[s: State] {
+  (all a: Addr | gte[s.credit[a], 0]) && gte[s.reserves, 0]
+}
+
+pred solvent[s: State] {
+  eq[total[s], s.reserves]
+}
+
+action deposit[s: State] {
+  pre { nonneg[s] }
+  post {
+    some a: Addr, v: Int |
+      gt[v, 0] &&
+      eq[s'.credit[a], add[s.credit[a], v]] &&
+      (all b: Addr - a | eq[s'.credit[b], s.credit[b]]) &&
+      eq[s'.reserves, add[s.reserves, v]]
+  }
+}
+
+action withdrawOk[s: State] {
+  pre { nonneg[s] }
+  post {
+    some a: Addr, v: Int |
+      gt[v, 0] &&
+      gte[s.credit[a], v] &&
+      gte[s.reserves, v] &&
+      eq[s'.credit[a], sub[s.credit[a], v]] &&
+      (all b: Addr - a | eq[s'.credit[b], s.credit[b]]) &&
+      eq[s'.reserves, sub[s.reserves, v]]
+  }
+}
+
+action withdrawShort[s: State] {
+  pre { nonneg[s] && (some a: Addr, v: Int | gt[v, 0] && lt[s.credit[a], v]) }
+  post { s'.credit = s.credit && eq[s'.reserves, s.reserves] }
+}
+
+program oneDeposit[s: State] { deposit[s] }
+program oneWithdraw[s: State] { withdrawOk[s] }
+program oneShort[s: State] { withdrawShort[s] }
+program trace[s: State] {
+  repeat { deposit[s] + withdrawOk[s] + withdrawShort[s] }
+}
+
+assertCorrectness p1_deposit[s: State] {
+  pre { nonneg[s] && solvent[s] }
+  program { call oneDeposit[s] }
+  post {
+    solvent[s'] && nonneg[s'] &&
+    (some a: Addr | gt[s'.credit[a], s.credit[a]] && eq[sub[s'.credit[a], s.credit[a]], sub[s'.reserves, s.reserves]]) &&
+    (all a: Addr | gte[s'.credit[a], s.credit[a]])
+  }
+}
+
+assertCorrectness p2_withdraw[s: State] {
+  pre { nonneg[s] && solvent[s] && (some a: Addr | gt[s.credit[a], 0]) }
+  program { call oneWithdraw[s] }
+  post {
+    solvent[s'] && nonneg[s'] &&
+    (some a: Addr | lt[s'.credit[a], s.credit[a]] && eq[sub[s.credit[a], s'.credit[a]], sub[s.reserves, s'.reserves]]) &&
+    (lone a: Addr | lt[s'.credit[a], s.credit[a]])
+  }
+}
+
+assertCorrectness p2_short[s: State] {
+  pre { nonneg[s] && solvent[s] && (some a: Addr, v: Int | gt[v, 0] && lt[s.credit[a], v]) }
+  program { call oneShort[s] }
+  post { solvent[s'] && s'.credit = s.credit && eq[s'.reserves, s.reserves] }
+}
+
+assertCorrectness p3_deposit[s: State] {
+  pre { nonneg[s] }
+  program { call oneDeposit[s] }
+  post { all a: Addr | gte[s'.credit[a], s.credit[a]] }
+}
+
+assertCorrectness p4_trace[s: State] {
+  pre { nonneg[s] && solvent[s] }
+  program { call trace[s] }
+  post { solvent[s'] && nonneg[s'] }
+}
+
+run oneDeposit for 2 but 3 State, 4 Int lurs 1
+run oneWithdraw for 2 but 3 State, 4 Int lurs 1
+run trace for 2 but 4 State, 4 Int lurs 2
+check p1_deposit for 2 but 3 State, 4 Int lurs 1
+check p2_withdraw for 2 but 3 State, 4 Int lurs 1
+check p2_short for 2 but 3 State, 4 Int lurs 1
+check p3_deposit for 2 but 3 State, 4 Int lurs 1
+check p4_trace for 2 but 4 State, 4 Int lurs 2

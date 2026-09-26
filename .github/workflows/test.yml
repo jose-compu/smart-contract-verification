@@ -72,3 +72,22 @@ jobs:
           build: "true"
           test: "false"
           lint: "false"
+
+  dynalloy:
+    name: DynAlloy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Check the SimpleBank DynAlloy model
+        run: verification/dynalloy/run.sh
