@@ -97,6 +97,8 @@ forge script script/Deploy.s.sol:DeploySimpleBank --broadcast --rpc-url http://1
 
 The Lean 4 experiment is [`verification/lean/`](verification/lean/): kernel-checked proofs of `SimpleBank` ([lean-lang.org](https://lean-lang.org/)).
 
+The Kontrol experiment is [`verification/kontrol/`](verification/kontrol/): the same vault, proved by symbolic execution on KEVM ([docs.runtimeverification.com/kontrol](https://docs.runtimeverification.com/kontrol/)). The subject is the compiled bytecode of `src/SimpleBank.sol`.
+
 ### Classification
 
 Tools are grouped by *how they argue*, not by vendor. The guarantee column is the usual ceiling, not a promise on `SimpleBank`.
@@ -175,7 +177,7 @@ Replace concrete fuzz inputs with symbols; the tool explores a tree of path cond
 
 - **Halmos** — Symbolic runner for Foundry tests ([a16z/halmos](https://github.com/a16z/halmos)). Existing `testFuzz_*` / `assert` tests are checked for *all* inputs in the explored space, or a counterexample is returned.
 - **hevm** — Symbolic EVM ([hevm.dev](https://hevm.dev/)). Assertion proofs, Foundry/ds-test execution, and bytecode equivalence. Closer to opcodes than Halmos’s Solidity-level view.
-- **Kontrol** — Foundry frontend on KEVM (Runtime Verification). Specs stay in Solidity tests; execution uses the K EVM model, so the trust base is the published semantics rather than a custom interpreter.
+- **Kontrol** — Foundry frontend on KEVM (Runtime Verification). Specs stay in Solidity tests; execution uses the K EVM model, so the trust base is the published semantics rather than a custom interpreter. The proofs are [`verification/kontrol/`](verification/kontrol/).
 
 #### Semantic frameworks
 

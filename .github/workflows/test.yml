@@ -72,3 +72,18 @@ jobs:
           build: "true"
           test: "false"
           lint: "false"
+
+  kontrol:
+    name: Kontrol
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Prove SimpleBank on KEVM
+        run: verification/kontrol/run.sh
