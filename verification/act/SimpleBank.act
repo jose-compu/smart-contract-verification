@@ -1,0 +1,39 @@
+// Equivalence spec for src/SimpleBank.sol.
+// BALANCE is the contract's ETH balance. A non-payable constructor gets BALANCE := 0 implicitly.
+// withdraw's success case is the transfer succeeding. A reverting receiver is a bytecode path
+// this spec does not name; the equivalence check is what decides whether that path is in scope.
+
+contract SimpleBank
+
+constructor()
+
+creates
+  mapping(address => uint256) balances := []
+
+transition deposit() payable
+
+iff
+  inRange(uint256, balances[CALLER] + CALLVALUE)
+  inRange(uint256, BALANCE + CALLVALUE)
+
+updates
+  balances := balances[CALLER => balances[CALLER] + CALLVALUE]
+  BALANCE := BALANCE + CALLVALUE
+
+transition withdraw(uint256 amount)
+
+iff
+  balances[CALLER] >= amount
+  BALANCE >= amount
+
+updates
+  balances := balances[CALLER => balances[CALLER] - amount]
+  BALANCE := BALANCE - amount
+
+transition balances(address account) : uint256
+
+iff
+  true
+
+returns
+  balances[account]

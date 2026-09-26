@@ -97,6 +97,8 @@ forge script script/Deploy.s.sol:DeploySimpleBank --broadcast --rpc-url http://1
 
 The Lean 4 experiment is [`verification/lean/`](verification/lean/): kernel-checked proofs of `SimpleBank` ([lean-lang.org](https://lean-lang.org/)).
 
+The Act experiment is [`verification/act/`](verification/act/): an Act spec of the same vault, checked for equivalence against the bytecode of `src/SimpleBank.sol` by Act's hevm backend.
+
 ### Classification
 
 Tools are grouped by *how they argue*, not by vendor. The guarantee column is the usual ceiling, not a promise on `SimpleBank`.
@@ -187,7 +189,7 @@ A formal operational model of the chain, then prove reachability claims on it.
 
 These *describe* behaviour. A separate engine checks it.
 
-- **Act** — Ethereum spec language (pre/post, storage updates, invariants) with SMT, Coq, and hevm backends. A `SimpleBank` Act spec can be discharged by more than one tool.
+- **Act** — Ethereum spec language (pre/post, storage updates, invariants) with SMT, Coq, and hevm backends. A `SimpleBank` Act spec can be discharged by more than one tool. The equivalence check is [`verification/act/`](verification/act/).
 - **Scribble** — In-source annotations compiled to assertions. Feeds fuzzers or Certora; it is not a prover.
 
 #### Property-based testing (not proofs)
