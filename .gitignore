@@ -23,3 +23,7 @@ verification/lean/.lake/
 
 # OS
 .DS_Store
+
+# DynAlloy runner output
+verification/dynalloy/*.class
+.alloy.tmp

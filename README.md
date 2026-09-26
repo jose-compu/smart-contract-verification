@@ -97,6 +97,8 @@ forge script script/Deploy.s.sol:DeploySimpleBank --broadcast --rpc-url http://1
 
 The Lean 4 experiment is [`verification/lean/`](verification/lean/): kernel-checked proofs of `SimpleBank` ([lean-lang.org](https://lean-lang.org/)).
 
+The DynAlloy experiment is [`verification/dynalloy/`](verification/dynalloy/): actions for deposit and withdraw, compiled to Alloy and checked by SAT inside a fixed scope. The subject is the model, not `src/SimpleBank.sol`.
+
 ### Classification
 
 Tools are grouped by *how they argue*, not by vendor. The guarantee column is the usual ceiling, not a promise on `SimpleBank`.
@@ -167,7 +169,7 @@ You state properties; an SMT or CHC solver tries to prove them or return a count
 Abstract relational state + SAT. Excellent at finding design bugs; a passing `check` only holds inside the chosen scope (number of addresses, trace length, bitwidth).
 
 - **Alloy** — Lightweight relational language and analyzer ([alloytools.org](https://alloytools.org/)). Encode addresses, credits, and balance as relations; `deposit` / `withdraw` as predicates; `check` solvency and authorization. Counterexamples are concrete instances.
-- **DynAlloy** — Alloy plus *actions*, sequencing, choice, and bounded loops, via partial-correctness assertions (WLP) compiled to Alloy/SAT. Write traces of `deposit` and `withdraw` as programs instead of stitching state predicates by hand.
+- **DynAlloy** — Alloy plus *actions*, sequencing, choice, and bounded loops, via partial-correctness assertions (WLP) compiled to Alloy/SAT. Write traces of `deposit` and `withdraw` as programs instead of stitching state predicates by hand. The bounded check is [`verification/dynalloy/`](verification/dynalloy/).
 
 #### Symbolic execution
 
